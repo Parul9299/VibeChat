@@ -1,43 +1,43 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  FlatList, 
-  Image, 
-  KeyboardAvoidingView, 
-  Platform, 
+import React, { useState, useRef, useLayoutEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
   useWindowDimensions,
   StyleSheet,
   ScrollView,
   Modal,
   TouchableWithoutFeedback,
-  StatusBar
+  StatusBar,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { 
-  Search, 
-  MoreVertical, 
-  Paperclip, 
-  Mic, 
-  Send, 
-  Phone, 
-  Video, 
-  MessageCircle, 
-  Bell, 
-  ChevronLeft, 
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useChat } from '../context/ChatContext';
+
+import {
+  Search,
+  MoreVertical,
+  Paperclip,
+  Mic,
+  Send,
+  Phone,
+  Video,
+  MessageCircle,
+  Bell,
+  ChevronLeft,
   ChevronRight,
   Download,
   CheckCheck,
   X,
-  Check,
-  LogOut,
-  Settings as SettingsIcon,
-  User as UserIcon
+  Check
 } from 'lucide-react-native';
-import { useChat } from '../context/ChatContext';
 
 interface Chat {
   id: string;
@@ -48,6 +48,7 @@ interface Chat {
   avatar: string;
   type: 'individual' | 'group';
   timestamp: number;
+  handle?: string; // Added for subtitle like @handle or website
 }
 
 interface Message {
@@ -58,9 +59,76 @@ interface Message {
   status: 'read' | 'sent' | 'unread';
 }
 
+interface GroupMember {
+  id: string;
+  name: string;
+  avatar: string;
+  about: string;
+  isAdmin: boolean;
+}
+
+type RootStackParamList = {
+  Settings: undefined;
+  Profile: undefined;
+  Login: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const getGroupMembers = (chatId: string): GroupMember[] => {
+  // Mock data based on chatId
+  switch (chatId) {
+    case '4':
+      return [
+        { id: 'm1', name: 'Neha Khanna', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=60', about: 'Project lead', isAdmin: true },
+        { id: 'm2', name: 'Sumit Kumar', avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150&auto=format&fit=crop&q=60', about: 'Developer', isAdmin: false },
+        { id: 'm3', name: '+91 98765 43321', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60', about: 'Designer', isAdmin: false },
+      ];
+    case '6':
+      return [
+        { id: 'm4', name: 'Kunal Desai', avatar: 'https://images.unsplash.com/photo-1578445714074-946b536079aa?w=150&auto=format&fit=crop&q=60', about: 'Team lead', isAdmin: true },
+        { id: 'm5', name: 'Raman Kumar', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=60', about: 'Engineer', isAdmin: false },
+        { id: 'm6', name: 'David Kim', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=60', about: 'Artist', isAdmin: false },
+      ];
+    case '7':
+      return [
+        { id: 'm7', name: 'Krishna Thakur', avatar: 'https://images.unsplash.com/photo-1578445714074-946b536079aa?w=150&auto=format&fit=crop&q=60', about: 'Manager', isAdmin: true },
+        { id: 'm8', name: 'Lisa Anderson', avatar: 'https://images.unsplash.com/photo-1578445714074-946b536079aa?w=150&auto=format&fit=crop&q=60', about: 'Traveler', isAdmin: false },
+        { id: 'm9', name: 'Mike Chen', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60', about: 'Tech enthusiast', isAdmin: false },
+      ];
+    default:
+      return [];
+  }
+};
+
+const getGroupCreator = (chatId: string) => {
+  // Mock creator data
+  switch (chatId) {
+    case '4':
+      return { name: 'Neha Khanna', createdAt: 'October 10, 2025, 2:30 PM', isMe: true };
+    case '6':
+      return { name: 'Kunal Desai', createdAt: 'October 11, 2025, 3:45 PM', isMe: false };
+    case '7':
+      return { name: 'Krishna Thakur', createdAt: 'October 9, 2025, 10:15 AM', isMe: false };
+    default:
+      return { name: 'Unknown', createdAt: 'Unknown', isMe: false };
+  }
+};
+
+const getContactBackground = (chatName: string) => {
+  // Mock background image based on contact name
+  switch (chatName.toLowerCase()) {
+    case 'olivia':
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&fit=crop';
+    default:
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&fit=crop';
+  }
+};
+
+const themeColor = '#fade83ff';
+
 export default function TabOneScreen() {
-  const navigation = useNavigation();
-  const router = useRouter();
+  const navigation = useNavigation<NavigationProp>();
   const { state, dispatch } = useChat();
   const { width, height } = useWindowDimensions();
   const isMobile = width < 768;
@@ -75,32 +143,33 @@ export default function TabOneScreen() {
   const [carouselStartIndex, setCarouselStartIndex] = useState(0);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [selectedAvatar, setSelectedAvatar] = useState('');
-  const [selectedMessages, setSelectedMessages] = useState<Message[]>([]); // Local for rendering
   const [searchQuery, setSearchQuery] = useState('');
 
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const carouselFlatListRef = useRef<FlatList>(null);
 
-  const selectedChat = state.chats.find(chat => chat.id === state.selectedChatId);
-  const filteredChats = state.chats.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const currentMessages = state.messagesByChat[state.selectedChatId || ''] || [];
-
   useLayoutEffect(() => {
     if (state.selectedChatId) {
-      navigation.setOptions({
+      (navigation as any).setOptions({
         tabBarStyle: { display: 'none' },
       });
     } else {
-      navigation.setOptions({
+      (navigation as any).setOptions({
         tabBarStyle: { display: 'flex' },
       });
     }
   }, [state.selectedChatId, navigation]);
 
-  const themeColor = '#8B5CF6';
+  const selectedChat = state.chats.find(chat => chat.id === state.selectedChatId);
+  const selectedMessages = useMemo(() => state.messagesByChat[state.selectedChatId || ''] || [], [state.messagesByChat, state.selectedChatId]);
+
+  const filteredChats = useMemo(() => 
+    state.chats
+      .filter(chat => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .sort((a, b) => b.timestamp - a.timestamp),
+    [state.chats, searchQuery]
+  );
 
   const mediaImages = [
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&fit=crop',
@@ -115,84 +184,65 @@ export default function TabOneScreen() {
     'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&fit=crop'
   ];
 
-  const sendMessage = () => {
-    if (newMessage.trim() === '' || !state.selectedChatId) return;
-    const message: Message = {
-      id: Date.now().toString(),
-      text: newMessage,
-      sender: 'me',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent'
-    };
-    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId, message } });
-    dispatch({
-      type: 'UPDATE_CHAT',
-      payload: {
-        id: state.selectedChatId,
-        updates: {
-          lastMessage: newMessage,
-          time: message.time,
-          unread: 0,
-          timestamp: Date.now(),
-        },
-      },
-    });
-    setNewMessage('');
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  const headerDropdownItems = [
+    { label: 'Settings' },
+    { label: 'Profile' },
+    { label: 'Logout' }
+  ];
+
+  const closeAllDropdowns = () => {
+    setShowDropdown(false);
+    setShowHeaderDropdown(false);
   };
 
-  const handleBack = () => {
-    if (state.fromContacts && currentMessages.length === state.initialMessageCount) {
-      dispatch({ type: 'REMOVE_CHAT', payload: state.originalContact?.id || '' });
-    }
-    dispatch({ type: 'SET_FROM_CONTACTS', payload: { fromContacts: false } });
-    dispatch({ type: 'SET_SELECTED_CHAT', payload: null });
-  };
-
-  const toggleInfoPane = () => {
-    setShowInfo(!showInfo);
+  const toggleHeaderDropdown = () => {
+    setShowHeaderDropdown(!showHeaderDropdown);
     setShowDropdown(false);
   };
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
-  };
-
-  const toggleHeaderDropdown = () => {
-    setShowHeaderDropdown(!showHeaderDropdown);
-  };
-
-  const handleHeaderOptionPress = (option: string) => {
     setShowHeaderDropdown(false);
-    switch (option) {
-      case 'Settings':
-        router.push('/settings');
-        break;
-      case 'Profile':
-        router.push('/profile');
-        break;
-      case 'Logout':
-        console.log('Logout pressed');
-        break;
-      default:
-        break;
-    }
+  };
+
+  const toggleInfoPane = () => {
+    setShowInfo(!showInfo);
+    closeAllDropdowns();
+  };
+
+  const sendMessage = () => {
+    if (!state.selectedChatId || newMessage.trim() === '') return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const prefix = selectedChat?.type === 'group' ? '~You: ' : '';
+    const message: Message = {
+      id: Date.now().toString(),
+      text: newMessage,
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId, updates: { lastMessage: prefix + newMessage, time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setNewMessage('');
+    closeAllDropdowns();
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   const handleOutsideClick = () => {
-    setShowDropdown(false);
-    setShowHeaderDropdown(false);
+    closeAllDropdowns();
   };
 
   const openImageModal = (avatarUrl: string) => {
     setSelectedAvatar(avatarUrl);
     setShowImageModal(true);
+    closeAllDropdowns();
   };
 
   const openMediaCarousel = (startIndex: number) => {
     setCarouselStartIndex(startIndex);
     setCurrentCarouselIndex(startIndex);
     setShowMediaCarousel(true);
+    closeAllDropdowns();
   };
 
   const scrollToCarouselIndex = (targetIndex: number) => {
@@ -201,8 +251,21 @@ export default function TabOneScreen() {
     setCurrentCarouselIndex(targetIndex);
   };
 
-  const closeMediaCarousel = () => {
-    setShowMediaCarousel(false);
+  const renderMediaThumbnail = ({ item, index }: { item: number; index: number }) => {
+    if (index < 6) {
+      return (
+        <TouchableOpacity onPress={() => openMediaCarousel(index)}>
+          <Image source={{ uri: mediaImages[index] }} style={styles.mediaThumbnail} />
+        </TouchableOpacity>
+      );
+    } else {
+      return (
+        <TouchableOpacity style={styles.seeMoreContainer} onPress={() => openMediaCarousel(10)}>
+          <ChevronRight size={20} color="#667781" />
+          <Text style={styles.seeMoreText}>See more</Text>
+        </TouchableOpacity>
+      );
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -212,22 +275,22 @@ export default function TabOneScreen() {
         styles.messageContainer,
         { justifyContent: isMe ? 'flex-end' : 'flex-start' }
       ]}>
-        <View 
+        <View
           style={[
             styles.messageBubble,
-            isMe 
-              ? { 
-                  backgroundColor: themeColor, 
-                  borderTopRightRadius: 4,
-                  borderBottomLeftRadius: 20,
-                  borderBottomRightRadius: 20
-                } 
-              : { 
-                  backgroundColor: '#F0F2F5', 
-                  borderTopLeftRadius: 4,
-                  borderBottomLeftRadius: 20,
-                  borderBottomRightRadius: 20
-                }
+            isMe
+              ? {
+                backgroundColor: '#374151',
+                borderTopRightRadius: 4,
+                borderBottomLeftRadius: 20,
+                borderBottomRightRadius: 20
+              }
+              : {
+                backgroundColor: '#202C33',
+                borderTopLeftRadius: 4,
+                borderBottomLeftRadius: 20,
+                borderBottomRightRadius: 20
+              }
           ]}
         >
           <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{item.text}</Text>
@@ -245,35 +308,65 @@ export default function TabOneScreen() {
   };
 
   const renderChatItem = ({ item }: { item: Chat }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
-        styles.chatItem,
-        { backgroundColor: state.selectedChatId === item.id ? '#F0F2F5' : 'transparent' }
+        styles.chatCard,
+        { 
+          backgroundColor: state.selectedChatId === item.id ? '#202C33' : '#111B21',
+          borderColor: state.selectedChatId === item.id ? '#202C33' : 'transparent'
+        }
       ]}
       onPress={() => {
         dispatch({ type: 'UPDATE_CHAT', payload: { id: item.id, updates: { unread: 0 } } });
         dispatch({ type: 'SET_SELECTED_CHAT', payload: item.id });
+        closeAllDropdowns();
         if (isDesktop) setShowInfo(false);
       }}
     >
-      <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
+      <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
+        <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
+      </TouchableOpacity>
       <View style={styles.chatInfo}>
-        <Text style={styles.chatName}>{item.name}</Text>
-        <Text style={[
-          styles.chatLastMsg, 
-          item.unread > 0 ? { fontWeight: 'bold', color: '#000' } : {}
-        ]} numberOfLines={1}>{item.lastMessage}</Text>
-      </View>
-      <View style={styles.chatMeta}>
-        <Text style={styles.chatTime}>{item.time}</Text>
-        {item.unread > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>{item.unread > 99 ? '99+' : item.unread}</Text>
-          </View>
-        )}
+        <Text style={styles.chatName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+        <Text 
+          style={styles.chatHandle}
+          numberOfLines={1} 
+          ellipsizeMode="tail"
+        >
+          {item.handle || item.lastMessage || '@username'} {/* Fallback to lastMessage if no handle */}
+        </Text>
       </View>
     </TouchableOpacity>
   );
+
+  const renderHeaderDropdown = (isMobileLayout: boolean) => {
+    const dropdownStyle = isMobileLayout 
+      ? [styles.headerDropdownMobile, { top: Platform.OS === 'ios' ? 120 : 100 }] 
+      : styles.headerDropdownDesktop;
+    return (
+      <View style={dropdownStyle}>
+        <FlatList
+          data={headerDropdownItems}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.dropdownItem} onPress={() => {
+              if (item.label === 'Settings') {
+                navigation.navigate('Settings');
+              } else if (item.label === 'Profile') {
+                navigation.navigate('Profile');
+              } else if (item.label === 'Logout') {
+                navigation.navigate('Login');
+              }
+              closeAllDropdowns();
+            }}>
+              <Text style={styles.dropdownItemText}>{item.label}</Text>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.label}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
+    );
+  };
 
   const WelcomeScreen = () => (
     <ScrollView contentContainerStyle={styles.welcomeContainer} showsVerticalScrollIndicator={false}>
@@ -282,7 +375,7 @@ export default function TabOneScreen() {
       </View>
       <Text style={styles.welcomeTitle}>Download VibeChat for Windows</Text>
       <Text style={styles.welcomeSubtitle}>Make calls, share your screen and get a faster experience when you download the app.</Text>
-      <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: themeColor }]} onPress={handleOutsideClick}>
+      <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: '#ebb60bff' }]} onPress={closeAllDropdowns}>
         <Download size={20} color="white" style={{ marginRight: 8 }} />
         <Text style={styles.downloadBtnText}>Download</Text>
       </TouchableOpacity>
@@ -300,356 +393,589 @@ export default function TabOneScreen() {
     { label: 'Delete chat', icon: 'x' }
   ];
 
-  const headerDropdownItems = [
-    { label: 'Settings', icon: SettingsIcon },
-    { label: 'Profile', icon: UserIcon },
-    { label: 'Logout', icon: LogOut }
-  ];
-
   const fullImageStyle = {
     width: width * 0.9,
     height: height * 0.7,
     resizeMode: 'contain' as const,
   };
 
-  const CarouselView = () => (
-    <View style={styles.carouselModalOverlay}>
-      <View style={[
-        styles.carouselHeader, 
-        { paddingHorizontal: width > 1300 ? 24 : 16 }
-      ]}>
-        <View style={styles.carouselHeaderLeft}>
-          <Image source={{ uri: selectedChat?.avatar || '' }} style={styles.avatar} />
-          <Text style={[
-            styles.carouselHeaderName, 
-            { fontSize: width > 1300 ? 20 : 18 }
-          ]}>{selectedChat?.name || 'Media'}</Text>
+  const renderGroupMember = ({ item }: { item: GroupMember }) => (
+    <View style={styles.groupMemberItem}>
+      <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
+        <Image source={{ uri: item.avatar }} style={styles.groupMemberAvatar} />
+      </TouchableOpacity>
+      <View style={styles.groupMemberInfo}>
+        <View style={styles.groupMemberHeader}>
+          <Text style={styles.groupMemberName}>{item.name}</Text>
+          {item.isAdmin && <Text style={styles.adminText}>admin</Text>}
         </View>
-        <TouchableOpacity style={styles.iconBtn} onPress={closeMediaCarousel}>
-          <X size={24} color="white" />
-        </TouchableOpacity>
+        <Text style={styles.groupMemberAbout}>{item.about}</Text>
       </View>
-      <FlatList
-        ref={carouselFlatListRef}
-        style={[styles.flex1, { paddingBottom: 80 }]}
-        data={mediaImages}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={carouselStartIndex}
-        getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
-        onMomentumScrollEnd={(event) => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / width);
-          setCurrentCarouselIndex(index);
-        }}
-        renderItem={({ item, index }) => (
-          <View style={[{ width, height: height - 140, justifyContent: 'center', alignItems: 'center' }]}>
-            <Image source={{ uri: item }} style={styles.carouselImage} />
-          </View>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-      />
-      <TouchableOpacity 
-        style={[styles.carouselNavBtn, styles.prevBtn]}
-        onPress={() => {
-          if (currentCarouselIndex > 0) {
-            scrollToCarouselIndex(currentCarouselIndex - 1);
-          }
-        }}
-      >
-        <ChevronLeft size={30} color="white" />
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.carouselNavBtn, styles.nextBtn]}
-        onPress={() => {
-          if (currentCarouselIndex < mediaImages.length - 1) {
-            scrollToCarouselIndex(currentCarouselIndex + 1);
-          }
-        }}
-      >
-        <ChevronRight size={30} color="white" />
-      </TouchableOpacity>
-      <View style={[
-        styles.carouselFooter, 
-        { padding: width > 1300 ? 12 : 10 }
-      ]}>
-        <FlatList
-          data={mediaImages}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item, index }) => (
-            <TouchableOpacity 
-              onPress={() => scrollToCarouselIndex(index)}
-              style={[
-                styles.previewThumb,
-                { 
-                  opacity: index === currentCarouselIndex ? 1 : 0.5,
-                  width: width > 1300 ? 70 : 60, 
-                  height: width > 1300 ? 70 : 60,
-                  marginRight: width > 1300 ? 12 : 10,
-                  borderRadius: width > 1300 ? 6 : 5
-                }
-              ]}
-            >
-              <Image source={{ uri: item }} style={styles.previewImage} />
-            </TouchableOpacity>
-          )}
-          keyExtractor={(_, i) => i.toString()}
-        />
-      </View>
-    </View>
-  );
-
-  // Tablet/Desktop layout
-  const ChatView = () => (
-    <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <TouchableWithoutFeedback onPress={handleOutsideClick}>
-        <>
-          <View style={[styles.header, { 
-            backgroundColor: themeColor,
-            paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0),
-            paddingHorizontal: width > 1300 ? 24 : 16
-          }]}>
-            {/* Info toggle for tablet/desktop */}
-            <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
-              <Image source={{ uri: selectedChat?.avatar }} style={[
-                styles.avatar, 
-                { width: width > 1300 ? 48 : 40, height: width > 1300 ? 48 : 40, borderRadius: width > 1300 ? 24 : 20 }
-              ]} />
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerName} numberOfLines={1}>{selectedChat?.name}</Text>
-                <Text style={styles.headerStatus}>Online</Text>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.headerActions}>
-              {showMediaCarousel ? (
-                <TouchableOpacity style={styles.iconBtn} onPress={closeMediaCarousel}>
-                  <X size={24} color="white" />
-                </TouchableOpacity>
-              ) : (
-                <>
-                  <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Phone size={24} color="white" /></TouchableOpacity>
-                  <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Video size={24} color="white" /></TouchableOpacity>
-                  <TouchableOpacity style={styles.iconBtn} onPress={toggleDropdown}>
-                    <MoreVertical size={24} color="white" />
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-
-          {showDropdown && (
-            <View style={[
-              styles.dropdownMenu, 
-              { right: width > 1300 ? 24 : 16, width: width > 1300 ? 220 : 200 }
-            ]}>
-              <FlatList
-                data={dropdownItems}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.dropdownItem} onPress={() => {
-                    console.log(item.label);
-                    setShowDropdown(false);
-                  }}>
-                    <Text style={styles.dropdownItemText}>{item.label}</Text>
-                  </TouchableOpacity>
-                )}
-                keyExtractor={(item) => item.label}
-                showsVerticalScrollIndicator={false}
-                style={{ maxHeight: 300 }}
-              />
-            </View>
-          )}
-
-          <FlatList
-            ref={flatListRef}
-            data={currentMessages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            style={styles.messagesList}
-            contentContainerStyle={styles.messagesContainer}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          />
-
-          <View style={[
-            styles.inputContainer, 
-            { paddingHorizontal: width > 1300 ? 24 : 16 }
-          ]}>
-            <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Paperclip size={24} color="#667781" /></TouchableOpacity>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message"
-              placeholderTextColor="#667781"
-              value={newMessage}
-              onChangeText={setNewMessage}
-              multiline
-            />
-            <TouchableOpacity style={styles.iconBtn} onPress={sendMessage}>
-              {newMessage.trim() === '' ? <Mic size={24} color={themeColor} /> : <Send size={24} color={themeColor} />}
-            </TouchableOpacity>
-          </View>
-        </>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
-  );
-
-  const InfoPane = () => (
-    <ScrollView style={styles.infoContent}>
-      <Image source={{ uri: selectedChat?.avatar || '' }} style={[
-        styles.largeAvatar, 
-        { width: width > 1300 ? 120 : 96, height: width > 1300 ? 120 : 96, borderRadius: width > 1300 ? 60 : 48 }
-      ]} />
-      <Text style={[
-        styles.infoName, 
-        { fontSize: width > 1300 ? 20 : 18 }
-      ]}>{selectedChat?.name}</Text>
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.infoAbout}>Hey there! I am using VibeChat</Text>
-      </View>
-      <View style={styles.infoSection}>
-        <Text style={styles.sectionTitle}>Media, links and docs</Text>
-        <View style={styles.mediaRow}>
-          {mediaImages.slice(0, 5).map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => openMediaCarousel(index)}
-              style={{ marginRight: 8 }}
-            >
-              <Image
-                source={{ uri: item }}
-                style={[
-                  styles.mediaThumbnail,
-                  {
-                    width: width > 1300 ? 70 : 60,
-                    height: width > 1300 ? 70 : 60,
-                    borderRadius: width > 1300 ? 10 : 8,
-                  },
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-          {mediaImages.length > 5 && (
-            <TouchableOpacity
-              style={[
-                styles.seeMoreContainer,
+      {!item.isAdmin && (
+        <TouchableOpacity
+          style={styles.removeMemberBtn}
+          onPress={() => {
+            Alert.alert(
+              'Remove Member',
+              `Remove ${item.name} from the group?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
                 {
-                  width: width > 1300 ? 70 : 60,
-                  height: width > 1300 ? 70 : 60,
-                  borderRadius: width > 1300 ? 10 : 8,
+                  text: 'Remove',
+                  style: 'destructive',
+                  onPress: () => {
+                    // Mock removal logic - in real app, dispatch action to update group members
+                    Alert.alert('Member Removed', `${item.name} has been removed from the group.`);
+                  },
                 },
-              ]}
-              onPress={() => openMediaCarousel(mediaImages.length - 1)}
-            >
-              <ChevronRight size={width > 1300 ? 22 : 20} color="#667781" />
-              <Text style={styles.seeMoreText}>See more</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-      <TouchableOpacity style={styles.actionBtn} onPress={() => console.log('View profile')}>
-        <Text style={styles.actionBtnText}>View profile</Text>
-      </TouchableOpacity>
-      <View style={[styles.infoSection, { borderBottomWidth: 0 }]}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => console.log('Encryption')}>
-          <Text style={styles.actionBtnText}>Encryption</Text>
+              ]
+            );
+          }}
+        >
+          <Text style={styles.removeMemberText}>Remove</Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-
-  const InfoHeader = () => (
-    <View style={[
-      styles.infoHeader, 
-      { padding: width > 1300 ? 20 : 16 }
-    ]}>
-      <Text style={[
-        styles.infoTitle, 
-        { fontSize: width > 1300 ? 18 : 16 }
-      ]}>Contact info</Text>
-      <TouchableOpacity onPress={toggleInfoPane}>
-        <X size={width > 1300 ? 26 : 24} color="#111B21" />
-      </TouchableOpacity>
+      )}
     </View>
   );
 
-  // Main content based on mobile or not
-  let mainContent;
+  const renderInfoContent = () => {
+    if (!selectedChat) return null;
+    const isGroup = selectedChat.type === 'group';
+    const infoTitle = isGroup ? 'Group info' : 'Contact info';
+    const groupMembers = isGroup ? getGroupMembers(selectedChat.id) : [];
+    const creator = isGroup ? getGroupCreator(selectedChat.id) : null;
+    const memberCount = groupMembers.length;
+    const contactBg = !isGroup ? getContactBackground(selectedChat.name) : null;
+
+    const content = (
+      <ScrollView style={styles.infoContent} contentContainerStyle={{ paddingBottom: 20 }}>
+        <TouchableOpacity onPress={() => openImageModal(selectedChat.avatar)}>
+          <Image source={{ uri: selectedChat.avatar }} style={styles.largeAvatar} />
+        </TouchableOpacity>
+        <Text style={styles.infoName}>{selectedChat.name}</Text>
+
+        {isGroup ? (
+          <>
+            {/* Members count */}
+            <View style={styles.infoSection}>
+              <Text style={styles.infoAbout}>{memberCount} members</Text>
+            </View>
+
+            {/* Creator */}
+            {creator && (
+              <View style={styles.infoSection}>
+                <Text style={styles.sectionTitle}>Created by</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={styles.infoAbout}>{`Group created by ${creator.isMe ? 'you' : creator.name}`}</Text>
+                  <Text style={styles.infoAbout}>{creator.createdAt}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Media Section */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Media, links, and docs</Text>
+              <FlatList
+                data={Array.from({ length: 7 }, (_, index) => index)}
+                renderItem={renderMediaThumbnail}
+                keyExtractor={(item) => item.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
+              />
+            </View>
+
+            {/* Group Members */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Group members</Text>
+              <FlatList
+                data={groupMembers}
+                renderItem={renderGroupMember}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+
+            {/* Actions */}
+            <View style={styles.infoSection}>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => {
+                  Alert.alert(
+                    'Exit Group',
+                    `Leave ${selectedChat.name}? You won't receive updates after leaving.`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Exit',
+                        style: 'destructive',
+                        onPress: () => {
+                          dispatch({ type: 'REMOVE_CHAT', payload: selectedChat.id });
+                          dispatch({ type: 'SET_SELECTED_CHAT', payload: null });
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.actionBtnText}>Exit Group</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+                <Text style={styles.actionBtnText}>Report Group</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* About Section for Individual */}
+            <View style={styles.contactInfoSection}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.infoAbout}>Loves coffee ☕</Text>
+              <TouchableOpacity style={styles.editBtn}>
+                <Text style={styles.editBtnText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Media Section */}
+            <View style={styles.contactInfoSection}>
+              <Text style={styles.sectionTitle}>Media, links, and docs</Text>
+              <FlatList
+                data={Array.from({ length: 7 }, (_, index) => index)}
+                renderItem={renderMediaThumbnail}
+                keyExtractor={(item) => item.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16 }}
+              />
+            </View>
+
+            {/* Actions for Individual */}
+            <View style={styles.contactInfoSection}>
+              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+                <Text style={styles.actionBtnText}>Block {selectedChat?.name}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+                <Text style={styles.actionBtnText}>Report {selectedChat?.name}</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    );
+
+    if (!isGroup && contactBg) {
+      return (
+        <ImageBackground
+          source={{ uri: contactBg }}
+          style={styles.infoContent}
+          imageStyle={{ opacity: 0.3 }}
+          resizeMode="cover"
+        >
+          {content}
+        </ImageBackground>
+      );
+    }
+
+    return content;
+  };
+
+  // Mobile layout
   if (isMobile) {
     if (!state.selectedChatId) {
-      // Full screen chat list for mobile
-      mainContent = (
+      // Full screen chat list
+      return (
         <View style={styles.flex1}>
-          <View style={[styles.chatsHeader, { paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0 }]}>
-            <View style={styles.logoContainer}>
-              <Text style={[
-                styles.logoText, 
-                { fontSize: width > 400 ? 20 : 18 }
-              ]}>VibeChat</Text>
-              <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color={themeColor} /></TouchableOpacity>
+          <TouchableWithoutFeedback onPress={handleOutsideClick}>
+            <View style={{ flex: 1 }}>
+              <View style={[styles.chatsHeader, { paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0 }]}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.vibeLogo}>
+                    <Text style={styles.logoHeart}>♥</Text>
+                    <Text style={styles.logoText}>VibeChat</Text>
+                  </View>
+                  <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color='#ffffff' /></TouchableOpacity>
+                </View>
+                <View style={styles.searchContainer}>
+                  <Search size={20} color="#667781" />
+                  <TextInput
+                    placeholder="Search or start new chat"
+                    style={styles.searchInput}
+                    onChangeText={setSearchQuery}
+                    value={searchQuery}
+                  />
+                </View>
+              </View>
+              <FlatList
+                data={filteredChats}
+                renderItem={renderChatItem}
+                keyExtractor={item => item.id}
+                style={styles.chatsList}
+                contentContainerStyle={{ paddingBottom: 20, paddingTop: 16 }}
+              />
             </View>
-            <View style={styles.searchContainer}>
-              <Search size={20} color="#667781" />
-              <TextInput 
-                placeholder="Search or start new chat" 
-                style={[
-                  styles.searchInput, 
-                  { fontSize: width > 400 ? 15 : 14 }
-                ]} 
-                onChangeText={setSearchQuery}
-                value={searchQuery}
+          </TouchableWithoutFeedback>
+          {showHeaderDropdown && renderHeaderDropdown(true)}
+          {/* Modals */}
+          <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={() => setShowImageModal(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
+                <X size={32} color="white" />
+              </TouchableOpacity>
+              <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+            </View>
+          </Modal>
+          <Modal visible={showMediaCarousel} transparent={true} animationType="slide" onRequestClose={() => setShowMediaCarousel(false)}>
+            <View style={styles.carouselModalOverlay}>
+              <View style={styles.carouselHeader}>
+                <View style={styles.carouselHeaderLeft}>
+                  <Image source={{ uri: selectedChat?.avatar || '' }} style={styles.avatar} />
+                  <Text style={styles.carouselHeaderName}>{selectedChat?.name || 'Media'}</Text>
+                </View>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+                  <X size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                ref={carouselFlatListRef}
+                style={[styles.flex1, { paddingBottom: 80 }]}
+                data={mediaImages}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                initialScrollIndex={carouselStartIndex}
+                getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
+                onMomentumScrollEnd={(event) => {
+                  const index = Math.round(event.nativeEvent.contentOffset.x / width);
+                  setCurrentCarouselIndex(index);
+                }}
+                renderItem={({ item, index }) => (
+                  <View style={[{ width, height: height - 140, justifyContent: 'center', alignItems: 'center' }]}>
+                    <Image source={{ uri: item }} style={styles.carouselImage} />
+                  </View>
+                )}
+                keyExtractor={(item, index) => index.toString()}
+              />
+              <TouchableOpacity
+                style={[styles.carouselNavBtn, styles.prevBtn]}
+                onPress={() => {
+                  if (currentCarouselIndex > 0) {
+                    scrollToCarouselIndex(currentCarouselIndex - 1);
+                  }
+                }}
+              >
+                <ChevronLeft size={30} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.carouselNavBtn, styles.nextBtn]}
+                onPress={() => {
+                  if (currentCarouselIndex < mediaImages.length - 1) {
+                    scrollToCarouselIndex(currentCarouselIndex + 1);
+                  }
+                }}
+              >
+                <ChevronRight size={30} color="white" />
+              </TouchableOpacity>
+              <View style={styles.carouselFooter}>
+                <FlatList
+                  data={mediaImages}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      onPress={() => scrollToCarouselIndex(index)}
+                      style={[
+                        styles.previewThumb,
+                        { opacity: index === currentCarouselIndex ? 1 : 0.5 }
+                      ]}
+                    >
+                      <Image source={{ uri: item }} style={styles.previewImage} />
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(_, i) => i.toString()}
+                />
+              </View>
+            </View>
+          </Modal>
+        </View>
+      );
+    }
+
+    // Mobile chat view
+    return (
+      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <TouchableWithoutFeedback onPress={closeAllDropdowns}>
+          <View style={{ flex: 1 }}>
+            <View style={[styles.header, {
+              backgroundColor: '#202C33',
+              paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0)
+            }]}>
+              {/* Back button for mobile */}
+              <TouchableOpacity style={styles.iconBtn} onPress={() => dispatch({ type: 'SET_SELECTED_CHAT', payload: null })}>
+                <ChevronLeft size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              {/* Info toggle */}
+              <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
+                <Image source={{ uri: selectedChat?.avatar }} style={styles.avatar} />
+                <View style={styles.headerInfo}>
+                  <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">{selectedChat?.name}</Text>
+                  {selectedChat?.type === 'group' ? (
+                    <Text style={styles.headerStatus} numberOfLines={1} ellipsizeMode="tail">
+                      {getGroupMembers(selectedChat.id).map(m => m.name).join(', ')}
+                    </Text>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.onlineDot} />
+                      <Text style={styles.headerStatus}>Online</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                {showMediaCarousel ? (
+                  <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+                    <X size={24} color="white" />
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Phone size={24} color="#FFFFFF" /></TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Video size={24} color="#FFFFFF" /></TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn} onPress={toggleDropdown}>
+                      <MoreVertical size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+
+            {showDropdown && (
+              <View style={styles.dropdownMenu}>
+                <FlatList
+                  data={dropdownItems}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={styles.dropdownItem} onPress={() => {
+                      console.log(item.label);
+                      closeAllDropdowns();
+                    }}>
+                      <Text style={styles.dropdownItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item) => item.label}
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
+            )}
+
+            <FlatList
+              ref={flatListRef}
+              data={selectedMessages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              style={styles.messagesList}
+              contentContainerStyle={styles.messagesContainer}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            />
+
+            <View style={styles.inputContainer}>
+              <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Type a message"
+                placeholderTextColor="#8696A0"
+                value={newMessage}
+                onChangeText={setNewMessage}
+                multiline
+              />
+              <TouchableOpacity style={styles.iconBtn} onPress={sendMessage}>
+                {newMessage.trim() === '' ? <Mic size={24} color={themeColor} /> : <Send size={24} color={themeColor} />}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+        {/* Image Overlay Modal */}
+        <Modal
+          visible={showImageModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowImageModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
+              <X size={32} color="white" />
+            </TouchableOpacity>
+            <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+          </View>
+        </Modal>
+        {/* Media Carousel Modal */}
+        <Modal
+          visible={showMediaCarousel}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowMediaCarousel(false)}
+        >
+          <View style={styles.carouselModalOverlay}>
+            <View style={styles.carouselHeader}>
+              <View style={styles.carouselHeaderLeft}>
+                <Image source={{ uri: selectedChat?.avatar || '' }} style={styles.avatar} />
+                <Text style={styles.carouselHeaderName}>{selectedChat?.name || 'Media'}</Text>
+              </View>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+                <X size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              ref={carouselFlatListRef}
+              style={[styles.flex1, { paddingBottom: 80 }]}
+              data={mediaImages}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={carouselStartIndex}
+              getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / width);
+                setCurrentCarouselIndex(index);
+              }}
+              renderItem={({ item, index }) => (
+                <View style={[{ width, height: height - 140, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Image source={{ uri: item }} style={styles.carouselImage} />
+                </View>
+              )}
+              keyExtractor={(item, index) => index.toString()}
+            />
+            <TouchableOpacity
+              style={[styles.carouselNavBtn, styles.prevBtn]}
+              onPress={() => {
+                if (currentCarouselIndex > 0) {
+                  scrollToCarouselIndex(currentCarouselIndex - 1);
+                }
+              }}
+            >
+              <ChevronLeft size={30} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.carouselNavBtn, styles.nextBtn]}
+              onPress={() => {
+                if (currentCarouselIndex < mediaImages.length - 1) {
+                  scrollToCarouselIndex(currentCarouselIndex + 1);
+                }
+              }}
+            >
+              <ChevronRight size={30} color="white" />
+            </TouchableOpacity>
+            <View style={styles.carouselFooter}>
+              <FlatList
+                data={mediaImages}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    onPress={() => scrollToCarouselIndex(index)}
+                    style={[
+                      styles.previewThumb,
+                      { opacity: index === currentCarouselIndex ? 1 : 0.5 }
+                    ]}
+                  >
+                    <Image source={{ uri: item }} style={styles.previewImage} />
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(_, i) => i.toString()}
               />
             </View>
           </View>
-          <FlatList
-            data={filteredChats}
-            renderItem={renderChatItem}
-            keyExtractor={item => item.id}
-            style={styles.chatsList}
-            contentContainerStyle={{ paddingBottom: 20 }}
-          />
-        </View>
-      );
-    } else {
-      // Mobile chat view
-      mainContent = (
-        <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableWithoutFeedback onPress={handleOutsideClick}>
-            <>
-              <View style={[styles.header, { 
-                backgroundColor: themeColor,
-                paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0),
-                paddingHorizontal: width > 400 ? 20 : 16
-              }]}>
-                {/* Back button for mobile */}
-                <TouchableOpacity style={styles.iconBtn} onPress={handleBack}>
-                  <ChevronLeft size={24} color="white" />
-                </TouchableOpacity>
-                {/* Info toggle */}
+        </Modal>
+        {/* Info Overlay Modal for mobile */}
+        <Modal
+          visible={showInfo}
+          transparent={false}
+          animationType="slide"
+          onRequestClose={() => setShowInfo(false)}
+        >
+          <View style={styles.infoModalOverlay}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>
+                {selectedChat?.type === 'group' ? 'Group info' : 'Contact info'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowInfo(false)}>
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            {renderInfoContent()}
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Tablet/Desktop layout
+  return (
+    <View style={styles.container}>
+      {/* Left Pane */}
+      <View style={[styles.leftPane, { width: isDesktop ? 360 : 300 }]}>
+        <TouchableWithoutFeedback onPress={handleOutsideClick}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.chatsHeader}>
+              <View style={styles.logoContainer}>
+                <View style={styles.vibeLogo}>
+                  <Text style={styles.logoHeart}>♥</Text>
+                  <Text style={styles.logoText}>VibeChat</Text>
+                </View>
+                <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color="#FFFFFF" /></TouchableOpacity>
+              </View>
+              <View style={styles.searchContainer}>
+                <Search size={20} color="#8696A0" />
+                <TextInput placeholder="Search or start new chat" style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} />
+              </View>
+            </View>
+            <FlatList
+              data={filteredChats}
+              renderItem={renderChatItem}
+              keyExtractor={item => item.id}
+              style={styles.chatsList}
+              contentContainerStyle={{ paddingBottom: 20, paddingTop: 16 }}
+            />
+          </View>
+        </TouchableWithoutFeedback>
+        {showHeaderDropdown && renderHeaderDropdown(false)}
+      </View>
+
+      {/* Right Pane */}
+      <View style={[
+        styles.rightPaneBase,
+        !state.selectedChatId && styles.rightPaneCentered,
+        showInfo && !isDesktop && { borderRightWidth: 1, borderRightColor: '#202C33' }
+      ]}>
+        {state.selectedChatId ? (
+          <TouchableWithoutFeedback onPress={closeAllDropdowns}>
+            <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+              <View style={[styles.header, { backgroundColor: '#202C33' }]}>
                 <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
-                  <Image source={{ uri: selectedChat?.avatar }} style={[
-                    styles.avatar, 
-                    { width: width > 400 ? 44 : 40, height: width > 400 ? 44 : 40, borderRadius: width > 400 ? 22 : 20 }
-                  ]} />
+                  <Image source={{ uri: selectedChat?.avatar }} style={styles.avatar} />
                   <View style={styles.headerInfo}>
-                    <Text style={[
-                      styles.headerName, 
-                      { fontSize: width > 400 ? 19 : 18 }
-                    ]} numberOfLines={1}>{selectedChat?.name}</Text>
-                    <Text style={styles.headerStatus}>Online</Text>
+                    <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">{selectedChat?.name}</Text>
+                    {selectedChat?.type === 'group' ? (
+                      <Text style={styles.headerStatus} numberOfLines={1} ellipsizeMode="tail">
+                        {getGroupMembers(selectedChat.id).map(m => m.name).join(', ')}
+                      </Text>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={styles.onlineDot} />
+                        <Text style={styles.headerStatus}>Online</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
                 <View style={styles.headerActions}>
                   {showMediaCarousel ? (
-                    <TouchableOpacity style={styles.iconBtn} onPress={closeMediaCarousel}>
-                      <X size={24} color="white" />
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+                      <X size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                   ) : (
                     <>
-                      <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Phone size={24} color="white" /></TouchableOpacity>
-                      <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Video size={24} color="white" /></TouchableOpacity>
+                      <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Phone size={24} color="#FFFFFF" /></TouchableOpacity>
+                      <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Video size={24} color="#FFFFFF" /></TouchableOpacity>
                       <TouchableOpacity style={styles.iconBtn} onPress={toggleDropdown}>
-                        <MoreVertical size={24} color="white" />
+                        <MoreVertical size={24} color="#FFFFFF" />
                       </TouchableOpacity>
                     </>
                   )}
@@ -657,53 +983,40 @@ export default function TabOneScreen() {
               </View>
 
               {showDropdown && (
-                <View style={[
-                  styles.dropdownMenu, 
-                  { right: width > 400 ? 20 : 16, width: width > 400 ? 210 : 200 }
-                ]}>
+                <View style={styles.dropdownMenu}>
                   <FlatList
                     data={dropdownItems}
                     renderItem={({ item }) => (
                       <TouchableOpacity style={styles.dropdownItem} onPress={() => {
                         console.log(item.label);
-                        setShowDropdown(false);
+                        closeAllDropdowns();
                       }}>
-                        <Text style={[
-                          styles.dropdownItemText, 
-                          { fontSize: width > 400 ? 15 : 14 }
-                        ]}>{item.label}</Text>
+                        <Text style={styles.dropdownItemText}>{item.label}</Text>
                       </TouchableOpacity>
                     )}
                     keyExtractor={(item) => item.label}
                     showsVerticalScrollIndicator={false}
-                    style={{ maxHeight: 300 }}
                   />
                 </View>
               )}
 
               <FlatList
                 ref={flatListRef}
-                data={currentMessages}
+                data={selectedMessages}
                 renderItem={renderMessage}
                 keyExtractor={item => item.id}
                 style={styles.messagesList}
-                contentContainerStyle={styles.messagesContainer}
+                contentContainerStyle={[styles.messagesContainer, styles.flexGrow]}
                 showsVerticalScrollIndicator={false}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               />
 
-              <View style={[
-                styles.inputContainer, 
-                { paddingHorizontal: width > 400 ? 20 : 16 }
-              ]}>
-                <TouchableOpacity style={styles.iconBtn} onPress={handleOutsideClick}><Paperclip size={24} color="#667781" /></TouchableOpacity>
+              <View style={styles.inputContainer}>
+                <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
                 <TextInput
-                  style={[
-                    styles.input, 
-                    { fontSize: width > 400 ? 16 : 15 }
-                  ]}
+                  style={styles.input}
                   placeholder="Type a message"
-                  placeholderTextColor="#667781"
+                  placeholderTextColor="#8696A0"
                   value={newMessage}
                   onChangeText={setNewMessage}
                   multiline
@@ -712,134 +1025,62 @@ export default function TabOneScreen() {
                   {newMessage.trim() === '' ? <Mic size={24} color={themeColor} /> : <Send size={24} color={themeColor} />}
                 </TouchableOpacity>
               </View>
-            </>
+            </KeyboardAvoidingView>
           </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      );
-    }
-  } else {
-    // Tablet/Desktop layout
-    mainContent = (
-      <View style={styles.container}>
-        {/* Left Pane - Chats List */}
-        <View style={[
-          styles.leftPane, 
-          { 
-            width: isDesktop ? 360 : (isTablet ? Math.min(300, width * 0.3) : 280),
-            minWidth: isDesktop ? 360 : (isTablet ? 280 : 250)
-          }
-        ]}>
-          <View style={[styles.chatsHeader, { paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0 }]}>
-            <View style={styles.logoContainer}>
-              <Text style={[
-                styles.logoText, 
-                { fontSize: width > 1400 ? 22 : (width > 1000 ? 20 : 18) }
-              ]}>VibeChat</Text>
-              <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color={themeColor} /></TouchableOpacity>
+        ) : (
+          <TouchableWithoutFeedback onPress={closeAllDropdowns}>
+            <View style={{ flex: 1, position: 'relative' }}>
+              <WelcomeScreen />
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Activate Windows</Text>
+                <Text style={styles.footerSubtext}>Go to Settings to activate Windows.</Text>
+              </View>
             </View>
-            <View style={styles.searchContainer}>
-              <Search size={20} color="#667781" />
-              <TextInput 
-                placeholder="Search or start new chat" 
-                style={[
-                  styles.searchInput, 
-                  { fontSize: width > 1000 ? 16 : 14 }
-                ]} 
-                onChangeText={setSearchQuery}
-                value={searchQuery}
-              />
-            </View>
-          </View>
-          <FlatList
-            data={filteredChats}
-            renderItem={renderChatItem}
-            keyExtractor={item => item.id}
-            style={styles.chatsList}
-            contentContainerStyle={{ paddingBottom: 20 }}
-          />
-        </View>
-
-        {/* Middle/Right Pane - Chat View or Welcome */}
-        <View style={[
-          styles.rightPaneBase,
-          !state.selectedChatId && styles.rightPaneCentered,
-          showInfo && !isDesktop && { borderRightWidth: 1, borderRightColor: '#E5E5E5' },
-          { flex: 1 }
-        ]}>
-          {state.selectedChatId ? <ChatView /> : <WelcomeScreen />}
-        </View>
-
-        {/* Info Pane for Desktop */}
-        {isDesktop && showInfo && (
-          <View style={[
-            styles.infoPane, 
-            { 
-              width: Math.min(500, width * 0.25), 
-              minWidth: 400 
-            }
-          ]}>
-            <InfoHeader />
-            <InfoPane />
-          </View>
+          </TouchableWithoutFeedback>
         )}
       </View>
-    );
-  }
 
-  return (
-    <>
-      {mainContent}
-      {/* Header Dropdown */}
-      {showHeaderDropdown && (
-        <View style={[
-          styles.dropdownMenu, 
-          { 
-            top: 80, 
-            right: 16,
-            width: 200
-          }
-        ]}>
-          <FlatList
-            data={headerDropdownItems}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.dropdownItem} 
-                onPress={() => handleHeaderOptionPress(item.label)}
-              >
-                <View style={styles.headerDropdownIcon}>
-                  <item.icon size={20} color="#111B21" />
-                </View>
-                <Text style={styles.dropdownItemText}>{item.label}</Text>
-              </TouchableOpacity>
-            )}
-            keyExtractor={(item) => item.label}
-            showsVerticalScrollIndicator={false}
-            style={{ maxHeight: 200 }}
-          />
+      {/* Side Info Pane for Desktop */}
+      {isDesktop && showInfo && state.selectedChatId && (
+        <View style={styles.infoPane}>
+          <View style={styles.infoHeader}>
+            <Text style={styles.infoTitle}>
+              {selectedChat?.type === 'group' ? 'Group info' : 'Contact info'}
+            </Text>
+            <TouchableOpacity onPress={() => { setShowInfo(false); closeAllDropdowns(); }}>
+              <X size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          {renderInfoContent()}
         </View>
       )}
-      {/* Info Overlay for Tablet */}
-      {isTablet && showInfo && (
-        <Modal visible={showInfo} transparent={false} animationType="slide" onRequestClose={toggleInfoPane}>
-          <View style={styles.infoModalOverlay}>
-            <InfoHeader />
-            <InfoPane />
-          </View>
-        </Modal>
+
+      {/* Overlay Info for Tablet */}
+      {isTablet && showInfo && state.selectedChatId && (
+        <View style={styles.infoOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowInfo(false)}>
+            <View style={styles.infoPaneOverlay}>
+              <View style={styles.infoHeader}>
+                <Text style={styles.infoTitle}>
+                  {selectedChat?.type === 'group' ? 'Group info' : 'Contact info'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowInfo(false)}>
+                  <X size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              {renderInfoContent()}
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
       )}
 
-      {/* Info Overlay for Mobile */}
-      {isMobile && state.selectedChatId && showInfo && (
-        <Modal visible={showInfo} transparent={false} animationType="slide" onRequestClose={toggleInfoPane}>
-          <View style={styles.infoModalOverlay}>
-            <InfoHeader />
-            <InfoPane />
-          </View>
-        </Modal>
-      )}
-
-      {/* Shared Modals */}
-      <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={() => setShowImageModal(false)}>
+      {/* Image Overlay Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImageModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
             <X size={32} color="white" />
@@ -847,36 +1088,104 @@ export default function TabOneScreen() {
           <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
         </View>
       </Modal>
-
+      {/* Media Carousel Modal */}
       <Modal
         visible={showMediaCarousel}
         transparent={true}
         animationType="slide"
-        onRequestClose={closeMediaCarousel}
+        onRequestClose={() => setShowMediaCarousel(false)}
       >
-        <CarouselView />
+        <View style={styles.carouselModalOverlay}>
+          <View style={styles.carouselHeader}>
+            <View style={styles.carouselHeaderLeft}>
+              <Image source={{ uri: selectedChat?.avatar || '' }} style={styles.avatar} />
+              <Text style={styles.carouselHeaderName}>{selectedChat?.name || 'Media'}</Text>
+            </View>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            ref={carouselFlatListRef}
+            style={[styles.flex1, { paddingBottom: 80 }]}
+            data={mediaImages}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={carouselStartIndex}
+            getItemLayout={(data, index) => ({ length: width, offset: width * index, index })}
+            onMomentumScrollEnd={(event) => {
+              const index = Math.round(event.nativeEvent.contentOffset.x / width);
+              setCurrentCarouselIndex(index);
+            }}
+            renderItem={({ item, index }) => (
+              <View style={[{ width, height: height - 140, justifyContent: 'center', alignItems: 'center' }]}>
+                <Image source={{ uri: item }} style={styles.carouselImage} />
+              </View>
+            )}
+            keyExtractor={(item, index) => index.toString()}
+          />
+          <TouchableOpacity
+            style={[styles.carouselNavBtn, styles.prevBtn]}
+            onPress={() => {
+              if (currentCarouselIndex > 0) {
+                scrollToCarouselIndex(currentCarouselIndex - 1);
+              }
+            }}
+          >
+            <ChevronLeft size={30} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.carouselNavBtn, styles.nextBtn]}
+            onPress={() => {
+              if (currentCarouselIndex < mediaImages.length - 1) {
+                scrollToCarouselIndex(currentCarouselIndex + 1);
+              }
+            }}
+          >
+            <ChevronRight size={30} color="white" />
+          </TouchableOpacity>
+          <View style={styles.carouselFooter}>
+            <FlatList
+              data={mediaImages}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  onPress={() => scrollToCarouselIndex(index)}
+                  style={[
+                    styles.previewThumb,
+                    { opacity: index === currentCarouselIndex ? 1 : 0.5 }
+                  ]}
+                >
+                  <Image source={{ uri: item }} style={styles.previewImage} />
+                </TouchableOpacity>
+              )}
+              keyExtractor={(_, i) => i.toString()}
+            />
+          </View>
+        </View>
       </Modal>
-    </>
+    </View>
   );
 }
 
-// Styles same as provided in the original index.tsx, with responsive tweaks
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
   flexGrow: { flexGrow: 1 },
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#0B141A',
   },
   leftPane: {
     borderRightWidth: 1,
-    borderRightColor: '#E5E5E5',
-    backgroundColor: 'white',
+    borderRightColor: '#202C33',
+    backgroundColor: '#111B21',
   },
-  rightPaneBase: { 
-    flex: 1, 
-    backgroundColor: '#EDEDED',
+  rightPaneBase: {
+    flex: 1,
+    backgroundColor: '#0B141A',
   },
   rightPaneCentered: {
     justifyContent: 'center',
@@ -885,8 +1194,8 @@ const styles = StyleSheet.create({
   infoPane: {
     width: 500,
     borderLeftWidth: 1,
-    borderLeftColor: '#E5E5E5',
-    backgroundColor: 'white',
+    borderLeftColor: '#202C33',
+    backgroundColor: '#111B21',
     flexDirection: 'column',
   },
   infoOverlay: {
@@ -896,14 +1205,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
-    backgroundColor: 'white',
+    backgroundColor: '#111B21',
   },
   infoPaneOverlay: {
     flex: 1,
   },
   infoModalOverlay: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#111B21',
   },
   infoHeader: {
     flexDirection: 'row',
@@ -911,21 +1220,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#202C33',
   },
-  infoTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#111B21' 
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF'
   },
   infoContent: {
     flex: 1,
-  },
-  mediaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflowX: 'auto',
-    marginBottom: 16,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -933,69 +1236,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#111B21',
+    borderBottomColor: '#202C33',
+  },
+  vibeLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoHeart: {
+    fontSize: 44,
+    color: themeColor,
+    marginRight: 4,
   },
   logoText: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: 'bold',
-    color: '#8B5CF6',
+    color: themeColor,
   },
-  chatsHeader: { backgroundColor: 'white' },
+  chatsHeader: { backgroundColor: '#111B21' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#202C33',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
     margin: 16,
   },
-  searchInput: { 
-    marginLeft: 8, 
-    flex: 1, 
-    color: '#000',
+  searchInput: {
+    marginLeft: 8,
+    flex: 1,
+    color: '#FFFFFF',
     fontSize: 14,
   },
-  chatsList: { flex: 1, backgroundColor: 'white' },
-  chatItem: {
+  chatsList: { flex: 1, backgroundColor: '#111B21' },
+  chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  avatarSmall: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
-    marginRight: 12 
+  avatarSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12
   },
-  chatInfo: { flex: 1, marginRight: 12 },
-  chatName: { fontWeight: 'bold', color: 'black', fontSize: 16 },
-  chatLastMsg: { color: '#667781', fontSize: 14, marginTop: 2 },
-  chatMeta: { alignItems: 'flex-end', minWidth: 60 },
-  chatTime: { color: '#667781', fontSize: 12, marginBottom: 4 },
-  unreadBadge: {
-    backgroundColor: '#8B5CF6',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  unreadText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
+  chatInfo: { flex: 1 },
+  chatName: { fontWeight: 'bold', color: '#FFFFFF', fontSize: 16 },
+  chatHandle: { color: '#8696A0', fontSize: 14, marginTop: 2 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: 8,
+    paddingTop: 7,
     paddingHorizontal: 16,
   },
   headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold' },
-  headerLeft: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
     padding: 4,
   },
@@ -1005,23 +1309,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 12,
   },
-  headerName: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-  headerStatus: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 2 },
-  headerActions: { 
-    flexDirection: 'row', 
+  headerName: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 18 },
+  headerStatus: { color: '#8696A0', fontSize: 14, marginTop: 2 },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00FF00',
+    marginRight: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  iconBtn: { 
+  iconBtn: {
     marginLeft: 8,
-    padding: 4 
+    padding: 4
   },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },
-  largeAvatar: { 
-    width: 96, 
-    height: 96, 
-    borderRadius: 48, 
-    marginTop: 24, 
+  largeAvatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    marginTop: 24,
     marginBottom: 16,
     alignSelf: 'center'
   },
@@ -1043,17 +1354,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
-  messageText: { color: 'black', fontSize: 15 },
+  messageText: { color: '#FFFFFF', fontSize: 15 },
   messageTextWhite: { color: 'white', fontSize: 15 },
-  messageFooter: { 
-    flexDirection: 'row', 
-    justifyContent: 'flex-end', 
-    alignItems: 'center', 
-    marginTop: 4 
+  messageFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 4
   },
-  time: { color: '#666', fontSize: 12 },
+  time: { color: '#8696A0', fontSize: 12 },
   timeWhite: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
-  messagesContainer: { 
+  messagesContainer: {
     paddingHorizontal: 0,
     paddingVertical: 8,
     flexGrow: 1,
@@ -1064,17 +1375,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    backgroundColor: 'white',
+    borderTopColor: '#202C33',
+    backgroundColor: '#111B21',
   },
   input: {
     flex: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#202C33',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginHorizontal: 8,
-    color: 'black',
+    color: '#FFFFFF',
     fontSize: 15,
   },
   welcomeContainer: {
@@ -1082,7 +1393,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#0B141A',
   },
   welcomeIcon: {
     marginBottom: 32,
@@ -1090,13 +1401,13 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111B21',
+    color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   welcomeSubtitle: {
     fontSize: 14,
-    color: '#667781',
+    color: '#8696A0',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -1116,7 +1427,7 @@ const styles = StyleSheet.create({
   },
   welcomeNote: {
     fontSize: 12,
-    color: '#667781',
+    color: '#8696A0',
     textAlign: 'center',
   },
   footer: {
@@ -1138,23 +1449,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#919EAB',
   },
-  infoName: { 
-    fontWeight: 'bold', 
-    marginTop: 8, 
+  infoName: {
+    fontWeight: 'bold',
+    marginTop: 8,
     marginBottom: 16,
     textAlign: 'center',
-    fontSize: 18 
+    fontSize: 18,
+    color: '#FFFFFF',
   },
   infoSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#202C33',
+  },
+  contactInfoSection: {
+    backgroundColor: 'rgba(32, 44, 51, 0.8)',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#111B21',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   editBtn: {
@@ -1163,7 +1483,7 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     fontSize: 12,
-    color: '#8B5CF6',
+    color: themeColor,
   },
   mediaThumbnail: {
     width: 60,
@@ -1171,40 +1491,90 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   seeMoreContainer: {
-    width: 'auto',
+    width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#202C33',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   seeMoreText: {
     fontSize: 12,
-    color: '#667781',
+    color: '#8696A0',
     marginTop: 2,
   },
   actionBtn: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#202C33',
   },
   actionBtnText: {
     fontSize: 14,
-    color: '#8B5CF6',
+    color: themeColor,
   },
-  infoAbout: { 
-    color: '#667781', 
+  infoAbout: {
+    color: '#8696A0',
     textAlign: 'left',
     lineHeight: 20,
-    marginBottom: 8 
+    marginBottom: 8
+  },
+  groupMemberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#202C33',
+  },
+  groupMemberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  groupMemberInfo: {
+    flex: 1,
+  },
+  groupMemberHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  groupMemberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  adminText: {
+    fontSize: 12,
+    color: themeColor,
+    marginLeft: 4,
+    backgroundColor: 'rgba(252, 211, 77, 0.1)',
+    paddingHorizontal: 4,
+    borderRadius: 4,
+  },
+  groupMemberAbout: {
+    fontSize: 14,
+    color: '#8696A0',
+  },
+  removeMemberBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 4,
+  },
+  removeMemberText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   dropdownMenu: {
     position: 'absolute',
-    top: 80,
+    top: 60,
+    right: 16,
     width: 200,
-    backgroundColor: 'white',
+    backgroundColor: '#202C33',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1214,23 +1584,44 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     maxHeight: 300,
   },
-  headerDropdownIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
+  headerDropdownMobile: {
+    position: 'absolute',
+    right: 16,
+    width: 200,
+    backgroundColor: '#202C33',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+    maxHeight: 300,
+  },
+  headerDropdownDesktop: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    width: 200,
+    backgroundColor: '#202C33',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+    maxHeight: 300,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#202C33',
   },
   dropdownItemText: {
     fontSize: 14,
-    color: '#111B21',
-    flex: 1,
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,

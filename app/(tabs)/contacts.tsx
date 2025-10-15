@@ -53,10 +53,12 @@ export default function ContactsScreen() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [showNewContactModal, setShowNewContactModal] = useState(false);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [showGroupNameModal, setShowGroupNameModal] = useState(false);
   const [selectedGroupContacts, setSelectedGroupContacts] = useState<GroupContact[]>([]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [groupNameInput, setGroupNameInput] = useState('');
   const [scaleValue] = useState(new Animated.Value(1));
   const sectionListRef = useRef<SectionList<Contact, ContactSection>>(null);
 
@@ -177,6 +179,9 @@ export default function ContactsScreen() {
 
   const handleContactPress = (contact: Contact) => {
     const existingChat = state.chats.find(chat => chat.id === contact.id);
+    const currentTimestamp = Date.now();
+    const messages = state.messagesByChat[contact.id] || [];
+
     if (!existingChat) {
       const newChat = {
         id: contact.id,
@@ -186,14 +191,18 @@ export default function ContactsScreen() {
         unread: 0,
         avatar: contact.avatar,
         type: 'individual' as const,
-        timestamp: Date.now(),
+        timestamp: currentTimestamp,
       };
       dispatch({ type: 'ADD_CHAT', payload: newChat });
       dispatch({ type: 'SET_MESSAGES', payload: { chatId: contact.id, messages: [] } });
+    } else {
+      dispatch({ type: 'UPDATE_CHAT', payload: { id: contact.id, updates: { timestamp: currentTimestamp, unread: 0 } } });
     }
+
+    dispatch({ type: 'SET_MESSAGES', payload: { chatId: contact.id, messages } });
     dispatch({ type: 'SET_FROM_CONTACTS', payload: { fromContacts: true, originalContact: contact, initialMessageCount: 0 } });
     dispatch({ type: 'SET_SELECTED_CHAT', payload: contact.id });
-    router.push('/(tabs)/contacts');  // Fixed: Use '/index' for same group navigation
+    router.push('/');
   };
 
   const renderSectionHeader = ({ section }: { section: ContactSection }) => (
@@ -260,16 +269,25 @@ export default function ContactsScreen() {
     );
   };
 
-  const createGroup = () => {
+  const handleCreateGroup = () => {
     const selected = selectedGroupContacts.filter(c => c.selected);
     if (selected.length < 2) {
       Alert.alert('Error', 'Select at least 2 contacts to create a group');
       return;
     }
-    const groupName = selected.map(c => c.name).join(', ');
+    const defaultName = selected.length <= 2 ? selected.map(c => c.name).join(', ') : `${selected[0].name}, ${selected[1].name}...`;
+    setGroupNameInput(defaultName);
+    setShowNewGroupModal(false);
+    setShowGroupNameModal(true);
+  };
+
+  const confirmCreateGroup = () => {
+    const selected = selectedGroupContacts.filter(c => c.selected);
+    const defaultName = selected.length <= 2 ? selected.map(c => c.name).join(', ') : `${selected[0].name}, ${selected[1].name}...`;
+    const finalName = groupNameInput.trim() || defaultName;
     const newGroupChat = {
       id: Date.now().toString(),
-      name: groupName,
+      name: finalName,
       lastMessage: '',
       time: '',
       unread: 0,
@@ -279,9 +297,11 @@ export default function ContactsScreen() {
     };
     dispatch({ type: 'ADD_CHAT', payload: newGroupChat });
     dispatch({ type: 'SET_MESSAGES', payload: { chatId: newGroupChat.id, messages: [] } });
-    Alert.alert('Success', `Group "${groupName}" created!`);
-    setShowNewGroupModal(false);
+    dispatch({ type: 'SET_SELECTED_CHAT', payload: newGroupChat.id });
+    Alert.alert('Success', `Group "${finalName}" created!`);
+    setShowGroupNameModal(false);
     setSelectedGroupContacts([]);
+    router.push('/');
   };
 
   const sections = getSections();
@@ -400,8 +420,31 @@ export default function ContactsScreen() {
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity style={styles.saveButton} onPress={createGroup}>
+            <TouchableOpacity style={styles.saveButton} onPress={handleCreateGroup}>
               <Text style={styles.saveButtonText}>Create Group</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Group Name Modal */}
+      <Modal visible={showGroupNameModal} animationType="slide" transparent={false}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Group Name</Text>
+            <TouchableOpacity onPress={() => { setShowGroupNameModal(false); setShowNewGroupModal(true); }}>
+              <X size={24} color="#667781" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalContent}>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Enter group name (optional)"
+              value={groupNameInput}
+              onChangeText={setGroupNameInput}
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={confirmCreateGroup}>
+              <Text style={styles.saveButtonText}>Create</Text>
             </TouchableOpacity>
           </View>
         </View>

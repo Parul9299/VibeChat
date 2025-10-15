@@ -136,7 +136,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       { 
         id: '3', 
-        name: 'Sumit Kumar', 
+        name: 'Vishal Raj', 
         lastMessage: 'Meeting at 2 PM', 
         time: '1:42 PM', 
         unread: 0, 

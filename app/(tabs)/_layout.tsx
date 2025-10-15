@@ -11,9 +11,8 @@ const isDesktop = width >= 1300;
 
 const tabConfig = [
   { name: 'index', title: 'Home', Icon: MessageCircle },
-  { name: 'contacts', title: 'Contacts', Icon: Users },
   { name: 'status', title: 'Status', Icon: CircleDashed },
-  { name: 'settings', title: 'Settings', Icon: Settings },
+  { name: 'contacts', title: 'Contacts', Icon: Users },
   { name: 'calls', title: 'Calls', Icon: PhoneCall }
 ];
 
@@ -21,7 +20,6 @@ const routes = {
   index: '/' as const,
   contacts: '/contacts' as const,
   status: '/status' as const,
-  settings: '/settings' as const,
   calls: '/calls' as const,
 };
 
@@ -42,7 +40,7 @@ export default function TabLayout() {
             tabBarStyle: {
               backgroundColor: theme.colors.card,
               borderTopColor: 'transparent',
-              height: 60,
+              height: 49,
               paddingBottom: 8,
             },
             tabBarActiveTintColor: theme.colors.primary,
