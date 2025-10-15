@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Mail, Phone, User, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native'; // Assuming lucide-react-native is installed
 
+const API_BASE_URL = 'http://localhost:3000/api';
+
 const SignUpScreen: React.FC = () => {
   const router = useRouter();
   const [step, setStep] = useState<'form' | 'otp'>('form');
@@ -25,18 +27,12 @@ const SignUpScreen: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [otp, setOtp] = useState<string>('');
-  const [generatedOtp, setGeneratedOtp] = useState<string>('');
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   const themeColor: string = '#8B5CF6';
   const themeColorLight: string = '#C4B5FD';
-  const otpValidityMinutes = 5; // OTP valid for 5 minutes
-
-  const generateOtp = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
 
   const validateForm = (): boolean => {
     if (!fullName || !email || !contact || !password || !confirmPassword) {
@@ -59,6 +55,10 @@ const SignUpScreen: React.FC = () => {
       setError('Passwords do not match');
       return false;
     }
+    if (!rememberMe) {
+      setError('Please agree to terms & conditions');
+      return false;
+    }
     setError('');
     return true;
   };
@@ -70,53 +70,60 @@ const SignUpScreen: React.FC = () => {
     setError('');
 
     try {
-      // Mock delay for frontend simulation (no backend call)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, phone: contact, password }),
+      });
 
-      const newOtp = generateOtp();
-      console.log(`Generated OTP for ${email}: ${newOtp} (valid for ${otpValidityMinutes} minutes)`);
-      setGeneratedOtp(newOtp);
-      setOtp('');
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Registration failed');
+        return;
+      }
+
+      // Assume success, OTP sent
       setStep('otp');
     } catch (err) {
-      setError('Failed to send verification code. Please try again.');
+      setError('Network error. Please try again.');
       console.error('Send OTP error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const validateOtp = (): boolean => {
+  const handleVerify = async (): Promise<void> => {
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
-      return false;
+      return;
     }
-    if (otp !== generatedOtp) {
-      setError('Invalid OTP. Please try again.');
-      return false;
-    }
-    setError('');
-    return true;
-  };
-
-  const handleVerify = async (): Promise<void> => {
-    if (!validateOtp()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      // Mock delay for frontend simulation (no backend call)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
 
-      // Store user data including password for mock login verification
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Verification failed');
+        return;
+      }
+
+      // On success, store user data
       const userData = { fullName, email, contact, password };
       await AsyncStorage.setItem('registeredUser', JSON.stringify(userData));
 
       // Redirect to login page
       router.push('/login');
     } catch (err) {
-      setError('Invalid OTP. Please try again.');
+      setError('Network error. Please try again.');
       console.error('Verify OTP error:', err);
     } finally {
       setLoading(false);
@@ -125,7 +132,8 @@ const SignUpScreen: React.FC = () => {
 
   const handleResend = (): void => {
     setStep('form');
-    // When going back to form, it will regenerate on next submit
+    setOtp('');
+    setError('');
   };
 
   const getCheckboxIconWrapperStyle = (): ViewStyle => ({
@@ -291,7 +299,7 @@ const SignUpScreen: React.FC = () => {
             </View>
 
             <Text style={styles.title}>Verify Email</Text>
-            <Text style={styles.subtitle}>Enter the 6-digit code sent to {email} (valid for {otpValidityMinutes} minutes)</Text>
+            <Text style={styles.subtitle}>Enter the 6-digit code sent to {email}</Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -370,7 +378,6 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(10px)',
     borderRadius: 20,
     padding: 30,
     width: '100%',

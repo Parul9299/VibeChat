@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Mail, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native'; // Assuming lucide-react-native is installed
 
+const API_BASE_URL = 'http://localhost:3000/api';
+
 const LoginScreen: React.FC = () => {
   const router = useRouter();
   const [email, setEmail] = useState<string>('');
@@ -27,56 +29,44 @@ const LoginScreen: React.FC = () => {
   const themeColor: string = '#8B5CF6';
   const themeColorLight: string = '#C4B5FD';
 
-  const validateForm = (): boolean => {
+  const handleSignIn = async (): Promise<void> => {
     if (!email || !password) {
       setError('Please enter email and password');
-      return false;
+      return;
     }
-    if (!email.includes('@')) {
-      setError('Please enter a valid email');
-      return false;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return false;
-    }
-    setError('');
-    return true;
-  };
-
-  const handleSignIn = async (): Promise<void> => {
-    if (!validateForm()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      // Mock delay for frontend simulation (no backend call)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Retrieve registered user from AsyncStorage
-      const registeredUserData = await AsyncStorage.getItem('registeredUser');
-      if (!registeredUserData) {
-        setError('No account found. Please sign up first.');
+      const data = await response.json();
+      console.log('Login response data:', data.accessToken); // Debugging line
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
         return;
       }
 
-      const registeredUser = JSON.parse(registeredUserData);
-      if (registeredUser.email !== email || registeredUser.password !== password) {
-        setError('Invalid email or password');
-        return;
-      }
-
-      // Set login token to match _layout.tsx expectation
-      await AsyncStorage.setItem('userToken', 'mock_token');
+      // Store token
+      await AsyncStorage.setItem('userToken', JSON.stringify(data.accessToken));
       
-      // Optionally store user data
-      await AsyncStorage.setItem('userData', JSON.stringify(registeredUser));
+      // Optionally store user data if returned
+      if (data.user) {
+        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+      }
 
       // Navigate to home route
+      console.log('Login successful, redirecting to tabs...');
       router.replace('/');
+      console.log('Redirecting to:', '/(tabs)/');
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError('Network error. Please try again.');
       console.error('Login error:', err);
     } finally {
       setLoading(false);

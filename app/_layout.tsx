@@ -26,7 +26,8 @@ export default function RootLayout() {
     const checkLoginStatus = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
-        setIsLoggedIn(!!token);
+        console.log('User token:', token); // Debugging line
+         setIsLoggedIn(!!token);
       } catch (error) {
         console.error('Error checking login status:', error);
       } finally {
@@ -39,17 +40,19 @@ export default function RootLayout() {
 
   // ✅ Redirect based on login status and current route
   useEffect(() => {
-    if (isLoading) return;
-
-    // Allow both signup and login routes as "auth group"
-    const inAuthGroup = segments[0] === 'signup' || segments[0] === 'login';
-
-    if (isLoggedIn && inAuthGroup) {
-      router.replace('/'); // Go to home if logged in
-    } else if (!isLoggedIn && !inAuthGroup) {
-      router.replace('/signup'); // Go to signup if not logged in
+  const checkLogin = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(!!token);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isLoading, isLoggedIn, segments]);
+  };
+
+  checkLogin();
+}, []);
 
   // ✅ Show loader while checking AsyncStorage
   if (isLoading) {

@@ -48,7 +48,7 @@ interface Chat {
   avatar: string;
   type: 'individual' | 'group';
   timestamp: number;
-  handle?: string; // Added for subtitle like @handle or website
+  handle?: string;
 }
 
 interface Message {
@@ -57,6 +57,7 @@ interface Message {
   sender: 'me' | 'them';
   time: string;
   status: 'read' | 'sent' | 'unread';
+  imageUrl?: string;
 }
 
 interface GroupMember {
@@ -125,7 +126,7 @@ const getContactBackground = (chatName: string) => {
   }
 };
 
-const themeColor = '#fade83ff';
+const themeColor = '#FFDA7C';
 
 export default function TabOneScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -164,7 +165,7 @@ export default function TabOneScreen() {
   const selectedChat = state.chats.find(chat => chat.id === state.selectedChatId);
   const selectedMessages = useMemo(() => state.messagesByChat[state.selectedChatId || ''] || [], [state.messagesByChat, state.selectedChatId]);
 
-  const filteredChats = useMemo(() => 
+  const filteredChats = useMemo(() =>
     state.chats
       .filter(chat => chat.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .sort((a, b) => b.timestamp - a.timestamp),
@@ -261,7 +262,7 @@ export default function TabOneScreen() {
     } else {
       return (
         <TouchableOpacity style={styles.seeMoreContainer} onPress={() => openMediaCarousel(10)}>
-          <ChevronRight size={20} color="#667781" />
+          <ChevronRight size={20} color="#526F8A" />
           <Text style={styles.seeMoreText}>See more</Text>
         </TouchableOpacity>
       );
@@ -270,78 +271,117 @@ export default function TabOneScreen() {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.sender === 'me';
+    const bubbleStyle = [
+      styles.messageBubble,
+      {
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+      },
+      isMe
+        ? {
+          backgroundColor: '#182231ff',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20
+        }
+        : {
+          backgroundColor: '#17243aff',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20
+        }
+    ];
     return (
       <View style={[
         styles.messageContainer,
         { justifyContent: isMe ? 'flex-end' : 'flex-start' }
       ]}>
-        <View
-          style={[
-            styles.messageBubble,
-            isMe
-              ? {
-                backgroundColor: '#374151',
-                borderTopRightRadius: 4,
-                borderBottomLeftRadius: 20,
-                borderBottomRightRadius: 20
-              }
-              : {
-                backgroundColor: '#202C33',
-                borderTopLeftRadius: 4,
-                borderBottomLeftRadius: 20,
-                borderBottomRightRadius: 20
-              }
-          ]}
-        >
-          <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{item.text}</Text>
-          <View style={styles.messageFooter}>
-            <Text style={isMe ? styles.timeWhite : styles.time}>{item.time}</Text>
-            {isMe && (
-              <View style={{ marginLeft: 4 }}>
-                {item.status === 'read' ? <CheckCheck size={14} color="#FFFFFF" /> : <Check size={14} color="#FFFFFF" />}
+        <View style={bubbleStyle}>
+          {item.imageUrl ? (
+            <>
+              <Image source={{ uri: item.imageUrl }} style={styles.messageImage} />
+              <View style={styles.messageFooter}>
+                <Text style={isMe ? styles.timeWhite : styles.time}>{item.time}</Text>
+                {isMe && (
+                  <View style={{ marginLeft: 4 }}>
+                    {item.status === 'read' ? <CheckCheck size={14} color="#FFFFFF" /> : <Check size={14} color="#FFFFFF" />}
+                  </View>
+                )}
               </View>
-            )}
-          </View>
+            </>
+          ) : (
+            <>
+              <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{item.text}</Text>
+              <View style={styles.messageFooter}>
+                <Text style={isMe ? styles.timeWhite : styles.time}>{item.time}</Text>
+                {isMe && (
+                  <View style={{ marginLeft: 4 }}>
+                    {item.status === 'read' ? <CheckCheck size={14} color="#FFFFFF" /> : <Check size={14} color="#FFFFFF" />}
+                  </View>
+                )}
+              </View>
+            </>
+          )}
         </View>
       </View>
     );
   };
 
-  const renderChatItem = ({ item }: { item: Chat }) => (
-    <TouchableOpacity
-      style={[
-        styles.chatCard,
-        { 
-          backgroundColor: state.selectedChatId === item.id ? '#202C33' : '#111B21',
-          borderColor: state.selectedChatId === item.id ? '#202C33' : 'transparent'
-        }
-      ]}
-      onPress={() => {
-        dispatch({ type: 'UPDATE_CHAT', payload: { id: item.id, updates: { unread: 0 } } });
-        dispatch({ type: 'SET_SELECTED_CHAT', payload: item.id });
-        closeAllDropdowns();
-        if (isDesktop) setShowInfo(false);
-      }}
-    >
-      <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
-        <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
+  const renderChatItem = ({ item }: { item: Chat }) => {
+    const isSelected = state.selectedChatId === item.id;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.chatCard,
+          {
+            backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.05)' : '#051834',
+            borderColor: isSelected ? 'transparent' : 'transparent',
+            borderBottomColor: isSelected ? 'transparent' : 'rgba(255, 255, 255, 0.1)',
+          }
+        ]}
+        onPress={() => {
+          dispatch({ type: 'UPDATE_CHAT', payload: { id: item.id, updates: { unread: 0 } } });
+          dispatch({ type: 'SET_SELECTED_CHAT', payload: item.id });
+          closeAllDropdowns();
+          if (isDesktop) setShowInfo(false);
+        }}
+      >
+        <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
+          <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
+        </TouchableOpacity>
+        <View style={styles.chatInfo}>
+          <Text style={[
+            styles.chatName,
+            { color: isSelected ? themeColor : '#FFFFFF' }
+          ]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+          <Text style={[
+            styles.chatHandle,
+            item.unread > 0 ? { fontWeight: 'bold', color: '#FFFFFF' } : {}
+          ]} numberOfLines={1} ellipsizeMode="tail">{item.handle || item.lastMessage}</Text>
+        </View>
+        <View style={styles.chatMeta}>
+          <Text style={styles.chatTime}>{item.time}</Text>
+          {item.unread > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{item.unread > 99 ? '99+' : item.unread}</Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
-      <View style={styles.chatInfo}>
-        <Text style={styles.chatName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-        <Text 
-          style={styles.chatHandle}
-          numberOfLines={1} 
-          ellipsizeMode="tail"
-        >
-          {item.handle || item.lastMessage || '@username'} {/* Fallback to lastMessage if no handle */}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   const renderHeaderDropdown = (isMobileLayout: boolean) => {
-    const dropdownStyle = isMobileLayout 
-      ? [styles.headerDropdownMobile, { top: Platform.OS === 'ios' ? 120 : 100 }] 
+    const dropdownStyle = isMobileLayout
+      ? [styles.headerDropdownMobile, { top: Platform.OS === 'ios' ? 120 : 100 }]
       : styles.headerDropdownDesktop;
     return (
       <View style={dropdownStyle}>
@@ -371,11 +411,11 @@ export default function TabOneScreen() {
   const WelcomeScreen = () => (
     <ScrollView contentContainerStyle={styles.welcomeContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.welcomeIcon}>
-        <MessageCircle size={200} color={themeColor} />
+        <MessageCircle size={200} color='#FFDF8C' />
       </View>
       <Text style={styles.welcomeTitle}>Download VibeChat for Windows</Text>
       <Text style={styles.welcomeSubtitle}>Make calls, share your screen and get a faster experience when you download the app.</Text>
-      <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: '#ebb60bff' }]} onPress={closeAllDropdowns}>
+      <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: '#CA973E' }]} onPress={closeAllDropdowns}>
         <Download size={20} color="white" style={{ marginRight: 8 }} />
         <Text style={styles.downloadBtnText}>Download</Text>
       </TouchableOpacity>
@@ -579,6 +619,8 @@ export default function TabOneScreen() {
     return content;
   };
 
+  const chatBackgroundUrl = 'https://wallpapercave.com/wp/wp10254485.jpg';
+
   // Mobile layout
   if (isMobile) {
     if (!state.selectedChatId) {
@@ -593,10 +635,10 @@ export default function TabOneScreen() {
                     <Text style={styles.logoHeart}>♥</Text>
                     <Text style={styles.logoText}>VibeChat</Text>
                   </View>
-                  <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color='#ffffff' /></TouchableOpacity>
+                  <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color={themeColor} /></TouchableOpacity>
                 </View>
                 <View style={styles.searchContainer}>
-                  <Search size={20} color="#667781" />
+                  <Search size={20} color="#526F8A" />
                   <TextInput
                     placeholder="Search or start new chat"
                     style={styles.searchInput}
@@ -610,7 +652,7 @@ export default function TabOneScreen() {
                 renderItem={renderChatItem}
                 keyExtractor={item => item.id}
                 style={styles.chatsList}
-                contentContainerStyle={{ paddingBottom: 20, paddingTop: 16 }}
+                contentContainerStyle={{ paddingBottom: 20, paddingTop: 8 }}
               />
             </View>
           </TouchableWithoutFeedback>
@@ -706,7 +748,7 @@ export default function TabOneScreen() {
         <TouchableWithoutFeedback onPress={closeAllDropdowns}>
           <View style={{ flex: 1 }}>
             <View style={[styles.header, {
-              backgroundColor: '#202C33',
+              backgroundColor: '#051834',
               paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0)
             }]}>
               {/* Back button for mobile */}
@@ -765,23 +807,30 @@ export default function TabOneScreen() {
               </View>
             )}
 
-            <FlatList
-              ref={flatListRef}
-              data={selectedMessages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              style={styles.messagesList}
-              contentContainerStyle={styles.messagesContainer}
-              showsVerticalScrollIndicator={false}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            />
+            <ImageBackground
+              source={{ uri: chatBackgroundUrl }}
+              style={styles.messagesBg}
+              imageStyle={styles.messagesImage}
+              resizeMode="cover"
+            >
+              <FlatList
+                ref={flatListRef}
+                data={selectedMessages}
+                renderItem={renderMessage}
+                keyExtractor={item => item.id}
+                style={styles.messagesList}
+                contentContainerStyle={styles.messagesContainer}
+                showsVerticalScrollIndicator={false}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+              />
+            </ImageBackground>
 
             <View style={styles.inputContainer}>
               <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
               <TextInput
                 style={styles.input}
                 placeholder="Type a message"
-                placeholderTextColor="#8696A0"
+                placeholderTextColor="#526F8A"
                 value={newMessage}
                 onChangeText={setNewMessage}
                 multiline
@@ -920,10 +969,10 @@ export default function TabOneScreen() {
                   <Text style={styles.logoHeart}>♥</Text>
                   <Text style={styles.logoText}>VibeChat</Text>
                 </View>
-                <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color="#FFFFFF" /></TouchableOpacity>
+                <TouchableOpacity onPress={toggleHeaderDropdown}><MoreVertical size={24} color={themeColor} /></TouchableOpacity>
               </View>
               <View style={styles.searchContainer}>
-                <Search size={20} color="#8696A0" />
+                <Search size={20} color="#385B90" />
                 <TextInput placeholder="Search or start new chat" style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} />
               </View>
             </View>
@@ -932,7 +981,7 @@ export default function TabOneScreen() {
               renderItem={renderChatItem}
               keyExtractor={item => item.id}
               style={styles.chatsList}
-              contentContainerStyle={{ paddingBottom: 20, paddingTop: 16 }}
+              contentContainerStyle={{ paddingBottom: 20, paddingTop: 8 }}
             />
           </View>
         </TouchableWithoutFeedback>
@@ -943,12 +992,12 @@ export default function TabOneScreen() {
       <View style={[
         styles.rightPaneBase,
         !state.selectedChatId && styles.rightPaneCentered,
-        showInfo && !isDesktop && { borderRightWidth: 1, borderRightColor: '#202C33' }
+        showInfo && !isDesktop && { borderRightWidth: 1, borderRightColor: '#081730' }
       ]}>
         {state.selectedChatId ? (
           <TouchableWithoutFeedback onPress={closeAllDropdowns}>
             <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-              <View style={[styles.header, { backgroundColor: '#202C33' }]}>
+              <View style={[styles.header, { backgroundColor: '#031229', borderBottomColor: '#081730', }]}>
                 <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
                   <Image source={{ uri: selectedChat?.avatar }} style={styles.avatar} />
                   <View style={styles.headerInfo}>
@@ -959,8 +1008,8 @@ export default function TabOneScreen() {
                       </Text>
                     ) : (
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={styles.onlineDot} />
-                        <Text style={styles.headerStatus}>Online</Text>
+                        {/* <View style={styles.onlineDot} />
+                        <Text style={styles.headerStatus}>Online</Text> */}
                       </View>
                     )}
                   </View>
@@ -1000,23 +1049,30 @@ export default function TabOneScreen() {
                 </View>
               )}
 
-              <FlatList
-                ref={flatListRef}
-                data={selectedMessages}
-                renderItem={renderMessage}
-                keyExtractor={item => item.id}
-                style={styles.messagesList}
-                contentContainerStyle={[styles.messagesContainer, styles.flexGrow]}
-                showsVerticalScrollIndicator={false}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-              />
+              <ImageBackground
+                source={{ uri: chatBackgroundUrl }}
+                style={styles.messagesBg}
+                imageStyle={styles.messagesImage}
+                resizeMode="cover"
+              >
+                <FlatList
+                  ref={flatListRef}
+                  data={selectedMessages}
+                  renderItem={renderMessage}
+                  keyExtractor={item => item.id}
+                  style={styles.messagesList}
+                  contentContainerStyle={[styles.messagesContainer, styles.flexGrow]}
+                  showsVerticalScrollIndicator={false}
+                  onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                />
+              </ImageBackground>
 
               <View style={styles.inputContainer}>
                 <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
                 <TextInput
                   style={styles.input}
                   placeholder="Type a message"
-                  placeholderTextColor="#8696A0"
+                  placeholderTextColor="#526F8A"
                   value={newMessage}
                   onChangeText={setNewMessage}
                   multiline
@@ -1029,7 +1085,7 @@ export default function TabOneScreen() {
           </TouchableWithoutFeedback>
         ) : (
           <TouchableWithoutFeedback onPress={closeAllDropdowns}>
-            <View style={{ flex: 1, position: 'relative' }}>
+            <View style={{ flex: 1, position: 'relative', width: '100%' }}>
               <WelcomeScreen />
               <View style={styles.footer}>
                 <Text style={styles.footerText}>Activate Windows</Text>
@@ -1180,12 +1236,12 @@ const styles = StyleSheet.create({
   },
   leftPane: {
     borderRightWidth: 1,
-    borderRightColor: '#202C33',
-    backgroundColor: '#111B21',
+    borderRightColor: '#081730',
+    backgroundColor: '#051834',
   },
   rightPaneBase: {
     flex: 1,
-    backgroundColor: '#0B141A',
+    backgroundColor: '#031229',
   },
   rightPaneCentered: {
     justifyContent: 'center',
@@ -1194,8 +1250,8 @@ const styles = StyleSheet.create({
   infoPane: {
     width: 500,
     borderLeftWidth: 1,
-    borderLeftColor: '#202C33',
-    backgroundColor: '#111B21',
+    borderLeftColor: '#081730',
+    backgroundColor: '#051834',
     flexDirection: 'column',
   },
   infoOverlay: {
@@ -1205,14 +1261,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
-    backgroundColor: '#111B21',
+    backgroundColor: '#051834',
   },
   infoPaneOverlay: {
     flex: 1,
   },
   infoModalOverlay: {
     flex: 1,
-    backgroundColor: '#111B21',
+    backgroundColor: '#051834',
   },
   infoHeader: {
     flexDirection: 'row',
@@ -1220,7 +1276,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#202C33',
+    borderBottomColor: '#031229',
   },
   infoTitle: {
     fontSize: 16,
@@ -1236,8 +1292,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    backgroundColor: '#111B21',
-    borderBottomColor: '#202C33',
+    backgroundColor: '#020E20',
+    borderBottomColor: '#051834',
   },
   vibeLogo: {
     flexDirection: 'row',
@@ -1253,27 +1309,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: themeColor,
   },
-  chatsHeader: { backgroundColor: '#111B21' },
+  chatsHeader: { backgroundColor: '#020E20' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#202C33',
-    borderRadius: 8,
+    backgroundColor: '#051834',
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     margin: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   searchInput: {
     marginLeft: 8,
     flex: 1,
-    color: '#FFFFFF',
+    color: '#385B90',
     fontSize: 14,
   },
-  chatsList: { flex: 1, backgroundColor: '#111B21' },
+  chatsList: { flex: 1, backgroundColor: '#020E20' },
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 16,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
@@ -1285,13 +1343,26 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginRight: 12
   },
-  chatInfo: { flex: 1 },
-  chatName: { fontWeight: 'bold', color: '#FFFFFF', fontSize: 16 },
-  chatHandle: { color: '#8696A0', fontSize: 14, marginTop: 2 },
+  chatInfo: { flex: 1, marginRight: 12 },
+  chatName: { fontWeight: 'bold', fontSize: 16, marginBottom: 2 },
+  chatHandle: { color: '#526F8A', fontSize: 14 },
+  chatMeta: { alignItems: 'flex-end', minWidth: 60, flexDirection: 'column' },
+  chatTime: { color: '#526F8A', fontSize: 12, marginBottom: 4 },
+  unreadBadge: {
+    backgroundColor: '#4f7bc7ff',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unreadText: { color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 5,
+    borderBottomColor: '#4f7bc7ff',
     paddingBottom: 8,
     paddingTop: 7,
     paddingHorizontal: 16,
@@ -1310,7 +1381,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   headerName: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 18 },
-  headerStatus: { color: '#8696A0', fontSize: 14, marginTop: 2 },
+  headerStatus: { color: '#526F8A', fontSize: 14, marginTop: 2 },
   onlineDot: {
     width: 8,
     height: 8,
@@ -1340,6 +1411,12 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+  messagesBg: {
+    flex: 1,
+  },
+  messagesImage: {
+    opacity: 0.07,
+  },
   messageContainer: {
     flexDirection: 'row',
     marginBottom: 8,
@@ -1354,6 +1431,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
   messageText: { color: '#FFFFFF', fontSize: 15 },
   messageTextWhite: { color: 'white', fontSize: 15 },
   messageFooter: {
@@ -1362,7 +1445,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4
   },
-  time: { color: '#8696A0', fontSize: 12 },
+  time: { color: '#526F8A', fontSize: 12 },
   timeWhite: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
   messagesContainer: {
     paddingHorizontal: 0,
@@ -1375,21 +1458,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#202C33',
-    backgroundColor: '#111B21',
+    borderTopColor: '#031229',
+    backgroundColor: '#051834',
   },
   input: {
     flex: 1,
-    backgroundColor: '#202C33',
+    backgroundColor: '#051834',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginHorizontal: 8,
     color: '#FFFFFF',
     fontSize: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   welcomeContainer: {
     flexGrow: 1,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
@@ -1407,7 +1493,7 @@ const styles = StyleSheet.create({
   },
   welcomeSubtitle: {
     fontSize: 14,
-    color: '#8696A0',
+    color: '#526F8A',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -1427,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   welcomeNote: {
     fontSize: 12,
-    color: '#8696A0',
+    color: '#526F8A',
     textAlign: 'center',
   },
   footer: {
@@ -1461,10 +1547,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#202C33',
+    borderBottomColor: '#031229',
   },
   contactInfoSection: {
-    backgroundColor: 'rgba(32, 44, 51, 0.8)',
+    backgroundColor: 'rgba(3, 18, 41, 0.8)',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
@@ -1494,28 +1580,28 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#202C33',
+    backgroundColor: '#031229',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   seeMoreText: {
     fontSize: 12,
-    color: '#8696A0',
+    color: '#526F8A',
     marginTop: 2,
   },
   actionBtn: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#202C33',
+    borderBottomColor: '#031229',
   },
   actionBtnText: {
     fontSize: 14,
     color: themeColor,
   },
   infoAbout: {
-    color: '#8696A0',
+    color: '#526F8A',
     textAlign: 'left',
     lineHeight: 20,
     marginBottom: 8
@@ -1525,7 +1611,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#202C33',
+    borderBottomColor: '#031229',
   },
   groupMemberAvatar: {
     width: 40,
@@ -1550,13 +1636,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: themeColor,
     marginLeft: 4,
-    backgroundColor: 'rgba(252, 211, 77, 0.1)',
+    backgroundColor: 'rgba(255, 218, 124, 0.1)',
     paddingHorizontal: 4,
     borderRadius: 4,
   },
   groupMemberAbout: {
     fontSize: 14,
-    color: '#8696A0',
+    color: '#526F8A',
   },
   removeMemberBtn: {
     paddingHorizontal: 12,
@@ -1574,7 +1660,7 @@ const styles = StyleSheet.create({
     top: 60,
     right: 16,
     width: 200,
-    backgroundColor: '#202C33',
+    backgroundColor: '#031229',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1583,12 +1669,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1000,
     maxHeight: 300,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerDropdownMobile: {
     position: 'absolute',
     right: 16,
     width: 200,
-    backgroundColor: '#202C33',
+    backgroundColor: '#031229',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1597,13 +1685,15 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1000,
     maxHeight: 300,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerDropdownDesktop: {
     position: 'absolute',
     top: 60,
     right: 16,
     width: 200,
-    backgroundColor: '#202C33',
+    backgroundColor: '#031229',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1612,12 +1702,14 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1000,
     maxHeight: 300,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   dropdownItem: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#202C33',
+    borderBottomColor: '#081730',
   },
   dropdownItemText: {
     fontSize: 14,

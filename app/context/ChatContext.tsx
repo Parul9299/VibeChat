@@ -116,7 +116,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initialChats: Chat[] = [
       { 
         id: '1', 
-        name: '+91 98765 43321', 
+        name: '+91 70546 56468', 
         lastMessage: 'See you tomorrow!', 
         time: '2:41 PM', 
         unread: 0, 
@@ -126,7 +126,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       { 
         id: '2', 
-        name: '+91 70546 56468', 
+        name: 'Vishal Raj', 
         lastMessage: 'Sure, looking now.', 
         time: '2:49 PM', 
         unread: 2, 
@@ -136,7 +136,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       { 
         id: '3', 
-        name: 'Vishal Raj', 
+        name: '+91 98765 43321', 
         lastMessage: 'Meeting at 2 PM', 
         time: '1:42 PM', 
         unread: 0, 
