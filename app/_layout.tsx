@@ -27,7 +27,7 @@ export default function RootLayout() {
       try {
         const token = await AsyncStorage.getItem('userToken');
         console.log('User token:', token); // Debugging line
-         setIsLoggedIn(!!token);
+        setIsLoggedIn(!!token);
       } catch (error) {
         console.error('Error checking login status:', error);
       } finally {
@@ -40,19 +40,19 @@ export default function RootLayout() {
 
   // ✅ Redirect based on login status and current route
   useEffect(() => {
-  const checkLogin = async () => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(!!token);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const checkLogin = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        setIsLoggedIn(!!token);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  checkLogin();
-}, []);
+    checkLogin();
+  }, []);
 
   // ✅ Show loader while checking AsyncStorage
   if (isLoading) {
@@ -69,7 +69,7 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <ChatProvider>
           <SafeAreaView style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: true }}>
+            <Stack screenOptions={{ headerShown: false }}>
               {/* Main Tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
@@ -77,9 +77,16 @@ export default function RootLayout() {
               <Stack.Screen
                 name="setting"
                 options={{
-                  presentation: 'containedModal',
+                  headerShown: false, // ✅ header removed
                   title: 'Settings',
-                  headerShown: false,
+                }}
+              />
+
+              <Stack.Screen
+                name="profile"
+                options={{
+                  headerShown: false, // ✅ header removed
+                  title: 'Profile',
                 }}
               />
 

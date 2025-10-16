@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -7,7 +8,7 @@ import {
   Switch,
   StyleSheet,
 } from 'react-native';
-import { ChevronRight, Moon, Bell, Lock, User, Palette, Shield, LogOut, Info } from 'lucide-react-native';
+import { ChevronLeft, Palette, Moon, Bell, Lock, User, Shield, LogOut, Info, ChevronRight } from 'lucide-react-native';
 
 interface Item {
   title: string;
@@ -25,6 +26,7 @@ interface Section {
 }
 
 export default function SettingsScreen() {
+  const router = useRouter();
   // Theme settings
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [systemTheme, setSystemTheme] = useState<boolean>(true);
@@ -57,17 +59,17 @@ export default function SettingsScreen() {
   const settingsSections: Section[] = [
     {
       title: "Theme",
-      icon: <Palette size={20} color="#8B5CF6" />,
+      icon: <Palette size={20} color="#FFDA7C" />,
       items: [
         {
           title: "Dark Mode",
-          icon: <Moon size={18} color="#8B5CF6" />,
+          icon: <Moon size={18} color="#FFDA7C" />,
           action: () => toggleDarkMode(),
           value: darkMode,
         },
         {
           title: "Use System Theme",
-          icon: <Palette size={18} color="#8B5CF6" />,
+          icon: <Palette size={18} color="#FFDA7C" />,
           action: () => toggleSystemTheme(),
           value: systemTheme,
         }
@@ -75,29 +77,29 @@ export default function SettingsScreen() {
     },
     {
       title: "Notifications",
-      icon: <Bell size={20} color="#8B5CF6" />,
+      icon: <Bell size={20} color="#FFDA7C" />,
       items: [
         {
           title: "Message Notifications",
-          icon: <Bell size={18} color="#8B5CF6" />,
+          icon: <Bell size={18} color="#FFDA7C" />,
           action: () => setMessageNotifications(!messageNotifications),
           value: messageNotifications,
         },
         {
           title: "Call Notifications",
-          icon: <Bell size={18} color="#8B5CF6" />,
+          icon: <Bell size={18} color="#FFDA7C" />,
           action: () => setCallNotifications(!callNotifications),
           value: callNotifications,
         },
         {
           title: "Group Notifications",
-          icon: <Bell size={18} color="#8B5CF6" />,
+          icon: <Bell size={18} color="#FFDA7C" />,
           action: () => setGroupNotifications(!groupNotifications),
           value: groupNotifications,
         },
         {
           title: "Notification Sound",
-          icon: <Bell size={18} color="#8B5CF6" />,
+          icon: <Bell size={18} color="#FFDA7C" />,
           action: () => setNotificationSound(!notificationSound),
           value: notificationSound,
         }
@@ -105,29 +107,29 @@ export default function SettingsScreen() {
     },
     {
       title: "Privacy",
-      icon: <Lock size={20} color="#8B5CF6" />,
+      icon: <Lock size={20} color="#FFDA7C" />,
       items: [
         {
           title: "Last Seen",
-          icon: <User size={18} color="#8B5CF6" />,
+          icon: <User size={18} color="#FFDA7C" />,
           action: () => setLastSeen(!lastSeen),
           value: lastSeen,
         },
         {
           title: "Profile Photo",
-          icon: <User size={18} color="#8B5CF6" />,
+          icon: <User size={18} color="#FFDA7C" />,
           action: () => setProfilePhoto(!profilePhoto),
           value: profilePhoto,
         },
         {
           title: "Read Receipts",
-          icon: <User size={18} color="#8B5CF6" />,
+          icon: <User size={18} color="#FFDA7C" />,
           action: () => setReadReceipts(!readReceipts),
           value: readReceipts,
         },
         {
           title: "Block Unknown Numbers",
-          icon: <User size={18} color="#8B5CF6" />,
+          icon: <User size={18} color="#FFDA7C" />,
           action: () => setBlockUnknown(!blockUnknown),
           value: blockUnknown,
         }
@@ -135,17 +137,17 @@ export default function SettingsScreen() {
     },
     {
       title: "Account",
-      icon: <User size={20} color="#8B5CF6" />,
+      icon: <User size={20} color="#FFDA7C" />,
       items: [
         {
           title: "Two-Factor Authentication",
-          icon: <Shield size={18} color="#8B5CF6" />,
+          icon: <Shield size={18} color="#FFDA7C" />,
           action: () => setTwoFactor(!twoFactor),
           value: twoFactor,
         },
         {
           title: "Log Out",
-          icon: <LogOut size={18} color="#8B5CF6" />,
+          icon: <LogOut size={18} color="#FFDA7C" />,
           action: () => console.log('Log out pressed'),
           chevron: true,
         }
@@ -153,24 +155,24 @@ export default function SettingsScreen() {
     },
     {
       title: "About",
-      icon: <Info size={20} color="#8B5CF6" />,
+      icon: <Info size={20} color="#FFDA7C" />,
       items: [
         {
           title: "App Version",
           subtitle: "1.0.0",
-          icon: <Info size={18} color="#8B5CF6" />,
+          icon: <Info size={18} color="#FFDA7C" />,
           action: () => console.log('App version pressed'),
           chevron: true,
         },
         {
           title: "Terms & Conditions",
-          icon: <Info size={18} color="#8B5CF6" />,
+          icon: <Info size={18} color="#FFDA7C" />,
           action: () => console.log('Terms pressed'),
           chevron: true,
         },
         {
           title: "Privacy Policy",
-          icon: <Info size={18} color="#8B5CF6" />,
+          icon: <Info size={18} color="#FFDA7C" />,
           action: () => console.log('Privacy policy pressed'),
           chevron: true,
         }
@@ -198,11 +200,11 @@ export default function SettingsScreen() {
         <Switch
           value={item.value}
           onValueChange={item.action}
-          trackColor={{ false: "#E0E0E0", true: "#8B5CF6" }}
-          thumbColor={item.value ? "#FFFFFF" : "#F0F0F0"}
+          trackColor={{ false: "#526F8A", true: "#FFDA7C" }}
+          thumbColor={item.value ? "#FFFFFF" : "#051834"}
         />
       ) : item.chevron ? (
-        <ChevronRight size={20} color="#667781" />
+        <ChevronRight size={20} color="#526F8A" />
       ) : null}
     </TouchableOpacity>
   );
@@ -211,7 +213,15 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+        </View>
       </View>
 
       {/* Settings Content */}
@@ -235,16 +245,16 @@ export default function SettingsScreen() {
   );
 }
 
-const themeColor = '#8B5CF6';
+const themeColor = '#FFDA7C';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#0B141A',
   },
   header: {
-    backgroundColor: themeColor,
-    paddingTop: 44,
+    backgroundColor: '#051834',
+    paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 16,
     shadowColor: '#000',
@@ -253,16 +263,26 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 8,
+    borderRadius: 20,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
+    marginLeft: 16,
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
     margin: 16,
     marginBottom: 8,
     borderRadius: 12,
@@ -271,6 +291,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -278,7 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   sectionIcon: {
     marginRight: 12,
@@ -286,10 +308,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#111B21',
+    color: '#FFFFFF',
   },
   sectionItems: {
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
+    borderRadius: 12,
   },
   item: {
     flexDirection: 'row',
@@ -298,7 +321,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   itemLeft: {
     flexDirection: 'row',
@@ -311,11 +334,11 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111B21',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   itemSubtitle: {
     fontSize: 14,
-    color: '#667781',
+    color: '#526F8A',
   },
 });

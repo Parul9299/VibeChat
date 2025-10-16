@@ -91,8 +91,8 @@ export default function CallsScreen() {
     const renderCallItem = ({ item }: { item: CallHistory }) => {
         const isMissed = item.type === 'missed';
         const isOutgoing = item.type === 'outgoing';
-        const arrowColor = isMissed ? '#EF4444' : '#667781';
-        const textColor = isMissed ? '#EF4444' : '#667781';
+        const arrowColor = isMissed ? '#FF6B6B' : '#526F8A';
+        const textColor = isMissed ? '#FF6B6B' : '#526F8A';
 
         return (
             <TouchableOpacity style={styles.callItem}>
@@ -117,7 +117,7 @@ export default function CallsScreen() {
                     <View style={styles.callHeader}>
                         <Text style={[
                             styles.callName,
-                            { color: isMissed ? '#EF4444' : '#000' }
+                            { color: isMissed ? '#FF6B6B' : '#FFFFFF' }
                         ]}>{item.name}</Text>
                     </View>
 
@@ -138,7 +138,7 @@ export default function CallsScreen() {
 
                 <TouchableOpacity style={styles.callButton}>
                     <Text style={styles.callTime}>{item.time}</Text>
-                    <Phone size={20} color="#8B5CF6" />
+                    <Phone size={20} color={themeColor} />
                 </TouchableOpacity>
             </TouchableOpacity>
         );
@@ -171,11 +171,11 @@ export default function CallsScreen() {
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputContainer}>
-                    <Search size={20} color="#667781" />
+                    <Search size={20} color="#526F8A" />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search calls"
-                        placeholderTextColor="#A0AEC0"
+                        placeholderTextColor="#526F8A"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
@@ -194,7 +194,7 @@ export default function CallsScreen() {
                     <View style={styles.listHeader}>
                         <Text style={styles.listHeaderTitle}>Recent Calls</Text>
                         <TouchableOpacity style={styles.clearAllButton} onPress={handleClearAll}>
-                            <Clock size={16} color="#8B5CF6" style={styles.clearAllIcon} />
+                            <Clock size={16} color={themeColor} style={styles.clearAllIcon} />
                             <Text style={styles.clearAllText}>Clear all</Text>
                         </TouchableOpacity>
                     </View>
@@ -211,15 +211,15 @@ export default function CallsScreen() {
     );
 }
 
-const themeColor = '#8B5CF6';
+const themeColor = '#FFDA7C';
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F2F5',
+        backgroundColor: '#0B141A',
     },
     header: {
-        backgroundColor: themeColor,
+        backgroundColor: '#051834',
         paddingTop: 44,
         paddingBottom: 16,
         paddingHorizontal: 16,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: 'white',
+        color: themeColor,
     },
     headerActions: {
         flexDirection: 'row',
@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         padding: 16,
-        backgroundColor: '#F0F2F5',
+        backgroundColor: '#0B141A',
     },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'white',
+        backgroundColor: '#051834',
         borderRadius: 24,
         paddingHorizontal: 16,
         paddingVertical: 12,
@@ -262,12 +262,14 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     searchInput: {
         flex: 1,
         marginLeft: 12,
         fontSize: 16,
-        color: '#000',
+        color: '#FFFFFF',
     },
     list: {
         flex: 1,
@@ -281,12 +283,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#F0F2F5',
+        backgroundColor: '#031229',
     },
     listHeaderTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#667781',
+        color: '#526F8A',
     },
     clearAllButton: {
         flexDirection: 'row',
@@ -305,9 +307,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: 'white',
+        backgroundColor: '#051834',
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F2F5',
+        borderBottomColor: '#031229',
     },
     avatarContainer: {
         position: 'relative',
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
         borderColor: 'white',
     },
     videoIcon: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: themeColor,
     },
     audioIcon: {
         backgroundColor: '#10B981',
@@ -351,7 +353,7 @@ const styles = StyleSheet.create({
     },
     callTime: {
         fontSize: 14,
-        color: '#667781',
+        color: '#526F8A',
     },
     callDetails: {
         flexDirection: 'row',
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#10B981',
+        backgroundColor: '#CA973E',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',

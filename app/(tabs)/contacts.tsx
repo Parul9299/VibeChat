@@ -233,7 +233,7 @@ export default function ContactsScreen() {
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.about} numberOfLines={1}>{item.about}</Text>
         </View>
-        <ChevronRight size={20} color="#667781" style={styles.chevron} />
+        <ChevronRight size={20} color="#526F8A" style={styles.chevron} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -320,11 +320,11 @@ export default function ContactsScreen() {
           <Text style={styles.headerTitle}>Contacts</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.newButton} onPress={handleNewGroupPress}>
-              <Users size={20} color="white" />
+              <Users size={20} color={themeColor} />
               <Text style={styles.newButtonText}>New Group</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.newButton} onPress={() => setShowNewContactModal(true)}>
-              <UserPlus size={20} color="white" />
+              <UserPlus size={20} color={themeColor} />
               <Text style={styles.newButtonText}>New Contact</Text>
             </TouchableOpacity>
           </View>
@@ -334,11 +334,11 @@ export default function ContactsScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Search size={20} color="#667781" />
+          <Search size={20} color="#526F8A" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search contacts"
-            placeholderTextColor="#A0AEC0"
+            placeholderTextColor="#526F8A"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -364,7 +364,7 @@ export default function ContactsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New Contact</Text>
             <TouchableOpacity onPress={() => setShowNewContactModal(false)}>
-              <X size={24} color="#667781" />
+              <X size={24} color="#526F8A" />
             </TouchableOpacity>
           </View>
           <View style={styles.modalContent}>
@@ -400,7 +400,7 @@ export default function ContactsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New Group</Text>
             <TouchableOpacity onPress={() => setShowNewGroupModal(false)}>
-              <X size={24} color="#667781" />
+              <X size={24} color="#526F8A" />
             </TouchableOpacity>
           </View>
           <View style={styles.modalContent}>
@@ -433,7 +433,7 @@ export default function ContactsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Group Name</Text>
             <TouchableOpacity onPress={() => { setShowGroupNameModal(false); setShowNewGroupModal(true); }}>
-              <X size={24} color="#667781" />
+              <X size={24} color="#526F8A" />
             </TouchableOpacity>
           </View>
           <View style={styles.modalContent}>
@@ -453,15 +453,15 @@ export default function ContactsScreen() {
   );
 }
 
-const themeColor = '#8B5CF6';
+const themeColor = '#FFDA7C';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#0B141A',
   },
   header: {
-    backgroundColor: themeColor,
+    backgroundColor: '#051834',
     paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: themeColor,
   },
   headerActions: {
     flexDirection: 'row',
@@ -487,26 +487,26 @@ const styles = StyleSheet.create({
   newButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     marginLeft: 8,
   },
   newButtonText: {
-    color: 'white',
+    color: themeColor,
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 4,
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#0B141A',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -515,12 +515,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   searchInput: {
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
-    color: '#000',
+    color: '#FFFFFF',
   },
   list: {
     flex: 1,
@@ -531,20 +533,20 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#031229',
   },
   sectionHeaderText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#667781',
+    color: '#526F8A',
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   avatarContainer: {
     position: 'relative',
@@ -567,7 +569,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#4ADE80',
+    backgroundColor: '#00FF00',
     borderWidth: 3,
     borderColor: 'white',
     shadowColor: '#000',
@@ -582,19 +584,19 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111B21',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   about: {
     fontSize: 15,
-    color: '#667781',
+    color: '#526F8A',
   },
   chevron: {
     marginLeft: 8,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -602,12 +604,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#031229',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111B21',
+    color: '#FFFFFF',
   },
   modalContent: {
     flex: 1,
@@ -615,21 +617,23 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: 'rgba(255,255,255,0.1)',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
     fontSize: 16,
+    backgroundColor: '#031229',
+    color: '#FFFFFF',
   },
   saveButton: {
-    backgroundColor: themeColor,
+    backgroundColor: '#020E20',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   saveButtonText: {
-    color: 'white',
+    color: '#526F8A',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -638,14 +642,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -663,6 +667,6 @@ const styles = StyleSheet.create({
   groupName: {
     flex: 1,
     fontSize: 16,
-    color: '#111B21',
+    color: '#FFFFFF',
   },
 });

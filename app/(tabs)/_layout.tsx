@@ -40,11 +40,16 @@ export default function TabLayout() {
             tabBarStyle: {
               backgroundColor: theme.colors.card,
               borderTopColor: 'transparent',
-              height: 49,
-              paddingBottom: 8,
+              height: 54,
+              paddingBottom: 5,
+              paddingTop: 5,
             },
             tabBarActiveTintColor: theme.colors.primary,
             tabBarInactiveTintColor: theme.colors.text,
+            tabBarLabelStyle: {
+              fontSize: 12,
+              marginTop: 2,
+            },
           }}
         >
           {tabConfig.map(({ name, title, Icon }) => (
@@ -54,11 +59,24 @@ export default function TabLayout() {
               options={{
                 title,
                 tabBarIcon: ({ color, focused }) => (
-                  <Icon
-                    size={24}
-                    color={color}
-                    fill={focused ? color : 'none'}
-                  />
+                  <View style={{ alignItems: 'center' }}>
+                    <Icon
+                      size={24}
+                      color={color}
+                      fill={focused ? color : 'none'}
+                    />
+                  </View>
+                ),
+                tabBarLabel: ({ focused, color }) => (
+                  <Text
+                    style={{
+                      color,
+                      fontSize: 12,
+                      fontWeight: focused ? '600' : '400',
+                    }}
+                  >
+                    {title}
+                  </Text>
                 ),
               }}
             />

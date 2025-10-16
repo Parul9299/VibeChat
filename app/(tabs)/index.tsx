@@ -18,8 +18,10 @@ import {
   Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useChat } from '../context/ChatContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   Search,
@@ -76,6 +78,8 @@ type RootStackParamList = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const API_BASE_URL = 'http://localhost:3000/api';
+
 const getGroupMembers = (chatId: string): GroupMember[] => {
   // Mock data based on chatId
   switch (chatId) {
@@ -129,6 +133,7 @@ const getContactBackground = (chatName: string) => {
 const themeColor = '#FFDA7C';
 
 export default function TabOneScreen() {
+  const router = useRouter();
   const navigation = useNavigation<NavigationProp>();
   const { state, dispatch } = useChat();
   const { width, height } = useWindowDimensions();
@@ -149,6 +154,52 @@ export default function TabOneScreen() {
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const carouselFlatListRef = useRef<FlatList>(null);
+
+  const handleLogout = async () => {
+    try {
+      // Step 1: Fetch and clean token (strip quotes + trim)
+      let rawToken = await AsyncStorage.getItem('userToken');
+      const token = rawToken ? rawToken.replace(/^["']|["']$/g, '').trim() : null; // Removes leading/trailing " or '
+      console.log('Raw token from storage:', rawToken);
+      console.log('Cleaned token length:', token?.length);
+      console.log('Full Auth header value:', `Bearer ${token}`);
+
+      if (!token) {
+        console.warn('No valid token found, forcing logout locally.');
+        await AsyncStorage.removeItem('userToken');
+        router.replace('/login');
+        return;
+      }
+
+      // Step 2: Call logout API with cleaned token
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`, // Now clean
+        },
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Full response data:', data);
+
+      if (!response.ok) {
+        console.error('Logout API failed:', data);
+      }
+
+      // Step 3: Remove token from AsyncStorage
+      await AsyncStorage.removeItem('userToken');
+
+      // Step 4: Navigate to login
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Something went wrong during logout.');
+    } finally {
+      closeAllDropdowns();
+    }
+  };
 
   useLayoutEffect(() => {
     if (state.selectedChatId) {
@@ -388,16 +439,19 @@ export default function TabOneScreen() {
         <FlatList
           data={headerDropdownItems}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.dropdownItem} onPress={() => {
-              if (item.label === 'Settings') {
-                navigation.navigate('Settings');
-              } else if (item.label === 'Profile') {
-                navigation.navigate('Profile');
-              } else if (item.label === 'Logout') {
-                navigation.navigate('Login');
-              }
-              closeAllDropdowns();
-            }}>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={async () => {
+                closeAllDropdowns();
+                if (item.label === 'Settings') {
+                  router.push('/settings');
+                } else if (item.label === 'Profile') {
+                  router.push('/profile');
+                } else if (item.label === 'Logout') {
+                  await handleLogout();
+                }
+              }}
+            >
               <Text style={styles.dropdownItemText}>{item.label}</Text>
             </TouchableOpacity>
           )}
@@ -855,6 +909,25 @@ export default function TabOneScreen() {
             <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
           </View>
         </Modal>
+        {/* Info Overlay Modal for mobile */}
+        <Modal
+          visible={showInfo}
+          transparent={false}
+          animationType="slide"
+          onRequestClose={() => setShowInfo(false)}
+        >
+          <View style={styles.infoModalOverlay}>
+            <View style={styles.infoHeader}>
+              <Text style={styles.infoTitle}>
+                {selectedChat?.type === 'group' ? 'Group info' : 'Contact info'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowInfo(false)}>
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            {renderInfoContent()}
+          </View>
+        </Modal>
         {/* Media Carousel Modal */}
         <Modal
           visible={showMediaCarousel}
@@ -931,25 +1004,6 @@ export default function TabOneScreen() {
                 keyExtractor={(_, i) => i.toString()}
               />
             </View>
-          </View>
-        </Modal>
-        {/* Info Overlay Modal for mobile */}
-        <Modal
-          visible={showInfo}
-          transparent={false}
-          animationType="slide"
-          onRequestClose={() => setShowInfo(false)}
-        >
-          <View style={styles.infoModalOverlay}>
-            <View style={styles.infoHeader}>
-              <Text style={styles.infoTitle}>
-                {selectedChat?.type === 'group' ? 'Group info' : 'Contact info'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowInfo(false)}>
-                <X size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-            {renderInfoContent()}
           </View>
         </Modal>
       </KeyboardAvoidingView>

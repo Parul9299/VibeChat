@@ -136,7 +136,7 @@ export default function StatusScreen() {
               <Text style={styles.statusName}>{myStatus.name}</Text>
               <Text style={styles.statusTime}>{myStatus.time}</Text>
             </View>
-            <ChevronRight size={20} color="#667781" />
+            <ChevronRight size={20} color="#526F8A" />
           </TouchableOpacity>
         </View>
 
@@ -205,15 +205,15 @@ export default function StatusScreen() {
   );
 }
 
-const themeColor = '#8B5CF6';
+const themeColor = '#FFDA7C';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F2F5',
+    backgroundColor: '#0B141A',
   },
   header: {
-    backgroundColor: themeColor,
+    backgroundColor: '#051834',
     paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -226,13 +226,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: themeColor,
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: '#051834',
     margin: 16,
     marginBottom: 8,
     borderRadius: 12,
@@ -245,11 +245,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#667781',
+    color: '#526F8A',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   myStatusItem: {
     flexDirection: 'row',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
+    borderBottomColor: '#031229',
   },
   avatarContainer: {
     position: 'relative',
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#4ADE80',
+    backgroundColor: '#00FF00',
     borderWidth: 2,
     borderColor: 'white',
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: '#526F8A',
     borderWidth: 2,
     borderColor: 'white',
   },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   statusName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111B21',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   viewedName: {
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   },
   statusTime: {
     fontSize: 14,
-    color: '#667781',
+    color: '#526F8A',
   },
   viewedTime: {
     color: '#9CA3AF',
