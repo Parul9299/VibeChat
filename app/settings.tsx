@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Switch,
   StyleSheet,
+  useWindowDimensions,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { ChevronLeft, Palette, Moon, Bell, Lock, User, Shield, LogOut, Info, ChevronRight } from 'lucide-react-native';
 
@@ -27,6 +30,11 @@ interface Section {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1300;
+  const isDesktop = width >= 1300;
+
   // Theme settings
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [systemTheme, setSystemTheme] = useState<boolean>(true);
@@ -45,6 +53,8 @@ export default function SettingsScreen() {
   
   // Account settings
   const [twoFactor, setTwoFactor] = useState<boolean>(false);
+
+  const [selectedSection, setSelectedSection] = useState(0);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -180,7 +190,7 @@ export default function SettingsScreen() {
     }
   ];
 
-  const renderItem = (item: Item, index: number, sectionIndex: number) => (
+  const renderItem = (item: Item, index: number) => (
     <TouchableOpacity
       key={index}
       style={styles.item}
@@ -209,38 +219,100 @@ export default function SettingsScreen() {
     </TouchableOpacity>
   );
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
+  const renderSectionItem = (section: Section, index: number) => (
+    <TouchableOpacity
+      key={index}
+      style={[
+        styles.sectionItem,
+        selectedSection === index && styles.selectedSectionItem
+      ]}
+      onPress={() => setSelectedSection(index)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.sectionItemLeft}>
+        <View style={styles.sectionItemIcon}>
+          {section.icon}
         </View>
+        <Text style={[
+          styles.sectionItemTitle,
+          selectedSection === index && styles.selectedSectionItemTitle
+        ]}>{section.title}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (isMobile) {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <ChevronLeft size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Settings</Text>
+          </View>
+        </View>
+
+        {/* Settings Content */}
+        <ScrollView style={styles.scrollView}>
+          {settingsSections.map((section: Section, sectionIndex: number) => (
+            <View key={sectionIndex} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIcon}>
+                  {section.icon}
+                </View>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
+              
+              <View style={styles.sectionItems}>
+                {section.items.map((item: Item, itemIndex: number) => renderItem(item, itemIndex))}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Tablet/Desktop layout
+  return (
+    <View style={styles.desktopContainer}>
+      {/* Left Pane - Sections Menu */}
+      <View style={[
+        styles.leftPane,
+        { width: isDesktop ? 300 : 250 }
+      ]}>
+        <ScrollView style={styles.leftScrollView}>
+          {settingsSections.map((section, index) => renderSectionItem(section, index))}
+        </ScrollView>
       </View>
 
-      {/* Settings Content */}
-      <ScrollView style={styles.scrollView}>
-        {settingsSections.map((section: Section, sectionIndex: number) => (
-          <View key={sectionIndex} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                {section.icon}
-              </View>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-            </View>
-            
-            <View style={styles.sectionItems}>
-              {section.items.map((item: Item, itemIndex: number) => renderItem(item, itemIndex, sectionIndex))}
-            </View>
+      {/* Right Pane - Content */}
+      <View style={styles.rightPane}>
+        {/* Header with fixed Settings title */}
+        <View style={styles.rightHeader}>
+          <View style={styles.rightHeaderContent}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <ChevronLeft size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.rightHeaderTitle}>Settings</Text>
           </View>
-        ))}
-      </ScrollView>
+        </View>
+
+        {/* Content Area */}
+        <ScrollView style={styles.rightContent}>
+          <View style={styles.rightSectionItems}>
+            {settingsSections[selectedSection].items.map((item, index) => renderItem(item, index))}
+          </View>
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -251,6 +323,76 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B141A',
+  },
+  desktopContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#0B141A',
+  },
+  leftPane: {
+    borderRightWidth: 1,
+    borderRightColor: '#081730',
+    backgroundColor: '#051834',
+  },
+  leftScrollView: {
+    flex: 1,
+  },
+  sectionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#031229',
+  },
+  selectedSectionItem: {
+    backgroundColor: 'rgba(255, 218, 124, 0.1)',
+  },
+  sectionItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  sectionItemIcon: {
+    marginRight: 12,
+  },
+  sectionItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  selectedSectionItemTitle: {
+    color: themeColor,
+  },
+  rightPane: {
+    flex: 1,
+    backgroundColor: '#031229',
+  },
+  rightHeader: {
+    backgroundColor: '#051834',
+    paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#081730',
+  },
+  rightHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rightHeaderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginLeft: 16,
+  },
+  rightContent: {
+    flex: 1,
+  },
+  rightSectionItems: {
+    backgroundColor: '#051834',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   header: {
     backgroundColor: '#051834',
