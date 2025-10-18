@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useLayoutEffect, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,7 +38,16 @@ import {
   Download,
   CheckCheck,
   X,
-  Check
+  Check,
+  User,
+  CheckSquare,
+  BellOff,
+  Clock,
+  Heart,
+  AlertTriangle,
+  Ban as BlockIcon,
+  Trash2,
+  Image as ImageIcon
 } from 'lucide-react-native';
 
 interface Chat {
@@ -149,11 +158,31 @@ export default function TabOneScreen() {
   const [carouselStartIndex, setCarouselStartIndex] = useState(0);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [selectedAvatar, setSelectedAvatar] = useState('');
+  const [profileName, setProfileName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [newMessage, setNewMessage] = useState('');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState(new Set<string>());
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardSelectedChats, setForwardSelectedChats] = useState(new Set<string>());
   const flatListRef = useRef<FlatList>(null);
   const carouselFlatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (!state.selectedChatId) {
+      setShowInfo(false);
+      setIsSelectionMode(false);
+      setSelectedMessageIds(new Set());
+      closeAllDropdowns();
+    }
+  }, [state.selectedChatId]);
+
+  useEffect(() => {
+    if (!showForwardModal) {
+      setForwardSelectedChats(new Set());
+    }
+  }, [showForwardModal]);
 
   const handleLogout = async () => {
     try {
@@ -245,6 +274,7 @@ export default function TabOneScreen() {
   const closeAllDropdowns = () => {
     setShowDropdown(false);
     setShowHeaderDropdown(false);
+    if (!isSelectionMode) setSelectedMessageIds(new Set());
   };
 
   const toggleHeaderDropdown = () => {
@@ -262,6 +292,151 @@ export default function TabOneScreen() {
     closeAllDropdowns();
   };
 
+  const enterSelectionMode = () => {
+    setIsSelectionMode(true);
+    setShowDropdown(false);
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedMessageIds(new Set());
+  };
+
+  const toggleMessageSelection = (messageId: string) => {
+    const newSelected = new Set(selectedMessageIds);
+    if (newSelected.has(messageId)) {
+      newSelected.delete(messageId);
+    } else {
+      newSelected.add(messageId);
+    }
+    setSelectedMessageIds(newSelected);
+  };
+
+  const deleteSelectedMessages = () => {
+    if (selectedMessageIds.size === 0 || !state.selectedChatId) return;
+    Alert.alert(
+      'Delete Messages',
+      `Delete ${selectedMessageIds.size} messages? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const currentMessages = selectedMessages.filter(m => !selectedMessageIds.has(m.id));
+            dispatch({ 
+              type: 'SET_MESSAGES', 
+              payload: { 
+                chatId: state.selectedChatId!,
+                messages: currentMessages
+              } 
+            });
+            exitSelectionMode();
+            closeAllDropdowns();
+          },
+        },
+      ]
+    );
+  };
+
+  const forwardSelectedMessages = () => {
+    if (selectedMessageIds.size === 0) return;
+    setShowForwardModal(true);
+  };
+
+  const clearChat = () => {
+    if (!state.selectedChatId) return;
+    Alert.alert(
+      'Clear Chat',
+      'Clear all messages in this chat?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            dispatch({ 
+              type: 'SET_MESSAGES', 
+              payload: { 
+                chatId: state.selectedChatId!,
+                messages: []
+              } 
+            });
+            closeAllDropdowns();
+          },
+        },
+      ]
+    );
+  };
+
+  const deleteChat = () => {
+    if (!state.selectedChatId) return;
+    Alert.alert(
+      'Delete Chat',
+      `Delete "${selectedChat?.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            dispatch({ type: 'REMOVE_CHAT', payload: state.selectedChatId! });
+            dispatch({ type: 'SET_MESSAGES', payload: { chatId: state.selectedChatId!, messages: [] } });
+            dispatch({ type: 'SET_SELECTED_CHAT', payload: null });
+            closeAllDropdowns();
+          },
+        },
+      ]
+    );
+  };
+
+  const muteNotifications = () => {
+    // Mock - dispatch mute
+    Alert.alert('Muted', 'Notifications muted for this chat.');
+    closeAllDropdowns();
+  };
+
+  const setDisappearingMessages = () => {
+    // Mock
+    Alert.alert('Disappearing Messages', 'Disappearing messages enabled for 24 hours.');
+    closeAllDropdowns();
+  };
+
+  const addToFavourites = () => {
+    // Mock - dispatch add to fav
+    Alert.alert('Added', 'Chat added to favourites.');
+    closeAllDropdowns();
+  };
+
+  const closeChat = () => {
+    dispatch({ type: 'SET_SELECTED_CHAT', payload: null });
+  };
+
+  const reportChat = () => {
+    Alert.alert('Report', 'Chat reported to moderators.');
+    closeAllDropdowns();
+  };
+
+  const blockChat = () => {
+    Alert.alert(
+      'Block',
+      `Block ${selectedChat?.name}? You will no longer receive messages.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Block', style: 'destructive', onPress: () => {
+          // Mock block
+          Alert.alert('Blocked', `${selectedChat?.name} blocked.`);
+          closeAllDropdowns();
+        }},
+      ]
+    );
+  };
+
+  const viewSharedMedia = () => {
+    openMediaCarousel(0);
+    closeAllDropdowns();
+  };
+
   const sendMessage = () => {
     if (!state.selectedChatId || newMessage.trim() === '') return;
     const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -273,8 +448,8 @@ export default function TabOneScreen() {
       time: currentTime,
       status: 'sent'
     };
-    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId, message } });
-    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId, updates: { lastMessage: prefix + newMessage, time: currentTime, unread: 0, timestamp: Date.now() } } });
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: prefix + newMessage, time: currentTime, unread: 0, timestamp: Date.now() } } });
     setNewMessage('');
     closeAllDropdowns();
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
@@ -284,8 +459,9 @@ export default function TabOneScreen() {
     closeAllDropdowns();
   };
 
-  const openImageModal = (avatarUrl: string) => {
+  const openImageModal = (avatarUrl: string, name: string = '') => {
     setSelectedAvatar(avatarUrl);
+    setProfileName(name);
     setShowImageModal(true);
     closeAllDropdowns();
   };
@@ -320,8 +496,22 @@ export default function TabOneScreen() {
     }
   };
 
+  const renderMessageText = (text: string, isMe: boolean) => {
+    if (text.startsWith('Forwarded: ')) {
+      const parts = text.split('Forwarded: ');
+      return (
+        <View style={{ flexDirection: 'column' }}>
+          <Text style={[isMe ? styles.messageTextWhite : styles.messageText, { color: '#A0A0A0', fontSize: 12, marginBottom: 2 }]}>Forwarded:</Text>
+          <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{parts[1]}</Text>
+        </View>
+      );
+    }
+    return <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{text}</Text>;
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.sender === 'me';
+    const isSelected = isSelectionMode && selectedMessageIds.has(item.id);
     const bubbleStyle = [
       styles.messageBubble,
       {
@@ -351,11 +541,20 @@ export default function TabOneScreen() {
         }
     ];
     return (
-      <View style={[
-        styles.messageContainer,
-        { justifyContent: isMe ? 'flex-end' : 'flex-start' }
-      ]}>
+      <TouchableOpacity 
+        onPress={() => isSelectionMode ? toggleMessageSelection(item.id) : null}
+        onLongPress={() => !isSelectionMode && enterSelectionMode()}
+        style={[
+          styles.messageContainer,
+          { justifyContent: isMe ? 'flex-end' : 'flex-start' }
+        ]}
+      >
         <View style={bubbleStyle}>
+          {isSelectionMode && (
+            <View style={styles.selectionCheckbox}>
+              <Check size={16} color={isSelected ? '#FFFFFF' : 'transparent'} strokeWidth={2} />
+            </View>
+          )}
           {item.imageUrl ? (
             <>
               <Image source={{ uri: item.imageUrl }} style={styles.messageImage} />
@@ -370,7 +569,7 @@ export default function TabOneScreen() {
             </>
           ) : (
             <>
-              <Text style={isMe ? styles.messageTextWhite : styles.messageText}>{item.text}</Text>
+              {renderMessageText(item.text, isMe)}
               <View style={styles.messageFooter}>
                 <Text style={isMe ? styles.timeWhite : styles.time}>{item.time}</Text>
                 {isMe && (
@@ -382,7 +581,7 @@ export default function TabOneScreen() {
             </>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -405,7 +604,7 @@ export default function TabOneScreen() {
           if (isDesktop) setShowInfo(false);
         }}
       >
-        <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
+        <TouchableOpacity onPress={() => openImageModal(item.avatar, item.name)}>
           <Image source={{ uri: item.avatar }} style={styles.avatarSmall} />
         </TouchableOpacity>
         <View style={styles.chatInfo}>
@@ -478,13 +677,16 @@ export default function TabOneScreen() {
   );
 
   const dropdownItems = [
-    { label: 'Select messages', icon: 'check-square' },
-    { label: 'Mute notifications', icon: 'bell-off' },
-    { label: 'Disappearing messages', icon: 'clock' },
-    { label: 'Clear chat', icon: 'trash-2' },
-    { label: 'Report', icon: 'alert-triangle' },
-    { label: 'Block', icon: 'block' },
-    { label: 'Delete chat', icon: 'x' }
+    { label: 'Close chat', icon: ChevronLeft, onPress: closeChat },
+    { label: 'Contact info', icon: User, onPress: toggleInfoPane },
+    { label: 'Select messages', icon: CheckSquare, onPress: enterSelectionMode },
+    { label: 'Mute notifications', icon: BellOff, onPress: muteNotifications },
+    { label: 'Disappearing messages', icon: Clock, onPress: setDisappearingMessages },
+    { label: 'Shared media', icon: ImageIcon, onPress: viewSharedMedia },
+    { label: 'Add to favourites', icon: Heart, onPress: addToFavourites },
+    { label: 'Report', icon: AlertTriangle, onPress: reportChat },
+    { label: 'Block', icon: BlockIcon, onPress: blockChat },
+    { label: 'Clear chat', icon: Trash2, onPress: clearChat },
   ];
 
   const fullImageStyle = {
@@ -495,7 +697,7 @@ export default function TabOneScreen() {
 
   const renderGroupMember = ({ item }: { item: GroupMember }) => (
     <View style={styles.groupMemberItem}>
-      <TouchableOpacity onPress={() => openImageModal(item.avatar)}>
+      <TouchableOpacity onPress={() => openImageModal(item.avatar, item.name)}>
         <Image source={{ uri: item.avatar }} style={styles.groupMemberAvatar} />
       </TouchableOpacity>
       <View style={styles.groupMemberInfo}>
@@ -543,7 +745,7 @@ export default function TabOneScreen() {
 
     const content = (
       <ScrollView style={styles.infoContent} contentContainerStyle={{ paddingBottom: 20 }}>
-        <TouchableOpacity onPress={() => openImageModal(selectedChat.avatar)}>
+        <TouchableOpacity onPress={() => openImageModal(selectedChat.avatar, selectedChat.name)}>
           <Image source={{ uri: selectedChat.avatar }} style={styles.largeAvatar} />
         </TouchableOpacity>
         <Text style={styles.infoName}>{selectedChat.name}</Text>
@@ -614,7 +816,7 @@ export default function TabOneScreen() {
               >
                 <Text style={styles.actionBtnText}>Exit Group</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => { closeAllDropdowns(); setShowInfo(false); }}>
                 <Text style={styles.actionBtnText}>Report Group</Text>
               </TouchableOpacity>
             </View>
@@ -645,10 +847,10 @@ export default function TabOneScreen() {
 
             {/* Actions for Individual */}
             <View style={styles.contactInfoSection}>
-              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => { closeAllDropdowns(); setShowInfo(false); }}>
                 <Text style={styles.actionBtnText}>Block {selectedChat?.name}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={closeAllDropdowns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => { closeAllDropdowns(); setShowInfo(false); }}>
                 <Text style={styles.actionBtnText}>Report {selectedChat?.name}</Text>
               </TouchableOpacity>
             </View>
@@ -674,6 +876,13 @@ export default function TabOneScreen() {
   };
 
   const chatBackgroundUrl = 'https://wallpapercave.com/wp/wp10254485.jpg';
+
+  const handleContextMenu = (e: any) => {
+    if (Platform.OS === 'web') {
+      e.preventDefault();
+    }
+    toggleDropdown();
+  };
 
   // Mobile layout
   if (isMobile) {
@@ -713,11 +922,18 @@ export default function TabOneScreen() {
           {showHeaderDropdown && renderHeaderDropdown(true)}
           {/* Modals */}
           <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={() => setShowImageModal(false)}>
-            <View style={styles.modalOverlay}>
-              <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
-                <X size={32} color="white" />
-              </TouchableOpacity>
-              <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+            <View style={styles.profileModalOverlay}>
+              <View style={styles.profileHeader}>
+                <View style={styles.profileHeaderLeft}>
+                  <Text style={styles.profileHeaderName}>{profileName || 'Profile'}</Text>
+                </View>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowImageModal(false)}>
+                  <X size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+              <View style={[styles.flex1, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+              </View>
             </View>
           </Modal>
           <Modal visible={showMediaCarousel} transparent={true} animationType="slide" onRequestClose={() => setShowMediaCarousel(false)}>
@@ -792,75 +1008,165 @@ export default function TabOneScreen() {
               </View>
             </View>
           </Modal>
+          <Modal visible={showForwardModal} transparent={false} animationType="slide" onRequestClose={() => setShowForwardModal(false)}>
+            <View style={styles.forwardModal}>
+              <View style={styles.forwardHeader}>
+                <Text style={styles.forwardTitle}>Forward to</Text>
+                <TouchableOpacity onPress={() => setShowForwardModal(false)}>
+                  <X size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={state.chats.filter(c => c.type === 'individual')}
+                renderItem={({item}) => {
+                  const isSelected = forwardSelectedChats.has(item.id);
+                  return (
+                    <TouchableOpacity style={styles.forwardContactItem} onPress={() => {
+                      const newSet = new Set(forwardSelectedChats);
+                      if (isSelected) newSet.delete(item.id); else newSet.add(item.id);
+                      setForwardSelectedChats(newSet);
+                    }}>
+                      <Image source={{uri: item.avatar}} style={styles.avatarSmall} />
+                      <Text style={styles.forwardContactName}>{item.name}</Text>
+                      {isSelected && <Check size={20} color={themeColor} />}
+                    </TouchableOpacity>
+                  );
+                }}
+                keyExtractor={item => item.id}
+              />
+              <View style={styles.forwardFooter}>
+                <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowForwardModal(false)}>
+                  <Text style={styles.forwardCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.forwardConfirmBtn, {opacity: forwardSelectedChats.size === 0 ? 0.5 : 1}]}
+                  disabled={forwardSelectedChats.size === 0}
+                  onPress={() => {
+                    const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                    forwardSelectedChats.forEach(chatId => {
+                      messagesToForward.forEach(msg => {
+                        const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                        const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                        const forwardedMsg: Message = {
+                          ...msg,
+                          id: Date.now().toString() + Math.random(),
+                          sender: 'me',
+                          status: 'sent',
+                          text: forwardedText,
+                        };
+                        dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
+                        dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                      });
+                    });
+                    setShowForwardModal(false);
+                    exitSelectionMode();
+                    closeAllDropdowns();
+                    Alert.alert('Forwarded', `Messages forwarded to ${forwardSelectedChats.size} chats.`);
+                  }}
+                >
+                  <Text style={styles.forwardConfirmText}>Forward ({forwardSelectedChats.size})</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       );
     }
 
     // Mobile chat view
     return (
-      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <TouchableWithoutFeedback onPress={closeAllDropdowns}>
-          <View style={{ flex: 1 }}>
-            <View style={[styles.header, {
-              backgroundColor: '#051834',
-              paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0)
-            }]}>
-              {/* Back button for mobile */}
-              <TouchableOpacity style={styles.iconBtn} onPress={() => dispatch({ type: 'SET_SELECTED_CHAT', payload: null })}>
-                <ChevronLeft size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              {/* Info toggle */}
-              <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
-                <Image source={{ uri: selectedChat?.avatar }} style={styles.avatar} />
-                <View style={styles.headerInfo}>
-                  <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">{selectedChat?.name}</Text>
-                  {selectedChat?.type === 'group' ? (
-                    <Text style={styles.headerStatus} numberOfLines={1} ellipsizeMode="tail">
-                      {getGroupMembers(selectedChat.id).map(m => m.name).join(', ')}
-                    </Text>
-                  ) : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={styles.onlineDot} />
-                      <Text style={styles.headerStatus}>Online</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-              <View style={styles.headerActions}>
-                {showMediaCarousel ? (
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
-                    <X size={24} color="white" />
-                  </TouchableOpacity>
+      <KeyboardAvoidingView style={styles.flex1} behavior="padding" enabled>
+        <View style={{ flex: 1 }}>
+          <View style={[styles.header, {
+            backgroundColor: '#051834',
+            paddingTop: Platform.OS === 'web' ? 20 : (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0)
+          }]}>
+            {/* Back button for mobile */}
+            <TouchableOpacity style={styles.iconBtn} onPress={() => dispatch({ type: 'SET_SELECTED_CHAT', payload: null })}>
+              <ChevronLeft size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            {/* Info toggle */}
+            <TouchableOpacity style={styles.headerLeft} onPress={toggleInfoPane}>
+              <Image source={{ uri: selectedChat?.avatar }} style={styles.avatar} />
+              <View style={styles.headerInfo}>
+                <Text style={styles.headerName} numberOfLines={1} ellipsizeMode="tail">{selectedChat?.name}</Text>
+                {selectedChat?.type === 'group' ? (
+                  <Text style={styles.headerStatus} numberOfLines={1} ellipsizeMode="tail">
+                    {getGroupMembers(selectedChat.id).map(m => m.name).join(', ')}
+                  </Text>
                 ) : (
-                  <>
-                    <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Phone size={24} color="#FFFFFF" /></TouchableOpacity>
-                    <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Video size={24} color="#FFFFFF" /></TouchableOpacity>
-                    <TouchableOpacity style={styles.iconBtn} onPress={toggleDropdown}>
-                      <MoreVertical size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* <View style={styles.onlineDot} /> */}
+                    {/* <Text style={styles.headerStatus}>Online</Text> */}
+                  </View>
                 )}
               </View>
+            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {isSelectionMode ? (
+                <View style={styles.selectionHeader}>
+                  <Text style={styles.selectionCount}>{selectedMessageIds.size}</Text>
+                  <TouchableOpacity style={styles.iconBtn} onPress={exitSelectionMode}>
+                    <X size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              ) : showMediaCarousel ? (
+                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
+                  <X size={24} color="white" />
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Phone size={24} color="#FFFFFF" /></TouchableOpacity>
+                  <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Video size={24} color="#FFFFFF" /></TouchableOpacity>
+                  <TouchableOpacity style={styles.iconBtn} onPress={toggleDropdown}>
+                    <MoreVertical size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
+          </View>
 
-            {showDropdown && (
-              <View style={styles.dropdownMenu}>
-                <FlatList
-                  data={dropdownItems}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.dropdownItem} onPress={() => {
-                      console.log(item.label);
-                      closeAllDropdowns();
-                    }}>
-                      <Text style={styles.dropdownItemText}>{item.label}</Text>
-                    </TouchableOpacity>
-                  )}
-                  keyExtractor={(item) => item.label}
-                  showsVerticalScrollIndicator={false}
-                />
-              </View>
-            )}
+          {isSelectionMode && (
+            <View style={styles.selectionActions}>
+              <TouchableOpacity style={styles.selectionActionBtn} onPress={deleteSelectedMessages}>
+                <Trash2 size={20} color="#FF6B6B" />
+                <Text style={styles.selectionActionText}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.selectionActionBtn} onPress={forwardSelectedMessages}>
+                <Send size={20} color={themeColor} />
+                <Text style={styles.selectionActionText}>Forward</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
+          {showDropdown && (
+            <View style={styles.dropdownMenu}>
+              <FlatList
+                data={dropdownItems}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.dropdownItemWithIcon} 
+                    onPress={() => {
+                      item.onPress();
+                    }}
+                  >
+                    <item.icon size={20} color="#FFFFFF" style={{ marginRight: 12 }} />
+                    <Text style={styles.dropdownItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.label}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
+
+          <TouchableOpacity 
+            style={styles.messagesWrapper}
+            onPress={showDropdown ? closeAllDropdowns : undefined}
+            onLongPress={toggleDropdown}
+            {...(Platform.OS === 'web' ? { onContextMenu: handleContextMenu } : {})}
+            activeOpacity={1}
+          >
             <ImageBackground
               source={{ uri: chatBackgroundUrl }}
               style={styles.messagesBg}
@@ -875,26 +1181,27 @@ export default function TabOneScreen() {
                 style={styles.messagesList}
                 contentContainerStyle={styles.messagesContainer}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               />
             </ImageBackground>
+          </TouchableOpacity>
 
-            <View style={styles.inputContainer}>
-              <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
-              <TextInput
-                style={styles.input}
-                placeholder="Type a message"
-                placeholderTextColor="#526F8A"
-                value={newMessage}
-                onChangeText={setNewMessage}
-                multiline
-              />
-              <TouchableOpacity style={styles.iconBtn} onPress={sendMessage}>
-                {newMessage.trim() === '' ? <Mic size={24} color={themeColor} /> : <Send size={24} color={themeColor} />}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.inputContainer}>
+            <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message"
+              placeholderTextColor="#526F8A"
+              value={newMessage}
+              onChangeText={setNewMessage}
+              multiline
+            />
+            <TouchableOpacity style={styles.iconBtn} onPress={sendMessage}>
+              {newMessage.trim() === '' ? <Mic size={24} color={themeColor} /> : <Send size={24} color={themeColor} />}
+            </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
+        </View>
         {/* Image Overlay Modal */}
         <Modal
           visible={showImageModal}
@@ -902,11 +1209,18 @@ export default function TabOneScreen() {
           animationType="fade"
           onRequestClose={() => setShowImageModal(false)}
         >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
-              <X size={32} color="white" />
-            </TouchableOpacity>
-            <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+          <View style={styles.profileModalOverlay}>
+            <View style={styles.profileHeader}>
+              <View style={styles.profileHeaderLeft}>
+                <Text style={styles.profileHeaderName}>{profileName || 'Profile'}</Text>
+              </View>
+              <TouchableOpacity style={styles.iconBtn} onPress={() => setShowImageModal(false)}>
+                <X size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.flex1, { justifyContent: 'center', alignItems: 'center' }]}>
+              <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+            </View>
           </View>
         </Modal>
         {/* Info Overlay Modal for mobile */}
@@ -1006,6 +1320,67 @@ export default function TabOneScreen() {
             </View>
           </View>
         </Modal>
+        <Modal visible={showForwardModal} transparent={false} animationType="slide" onRequestClose={() => setShowForwardModal(false)}>
+          <View style={styles.forwardModal}>
+            <View style={styles.forwardHeader}>
+              <Text style={styles.forwardTitle}>Forward to</Text>
+              <TouchableOpacity onPress={() => setShowForwardModal(false)}>
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={state.chats.filter(c => c.type === 'individual')}
+              renderItem={({item}) => {
+                const isSelected = forwardSelectedChats.has(item.id);
+                return (
+                  <TouchableOpacity style={styles.forwardContactItem} onPress={() => {
+                    const newSet = new Set(forwardSelectedChats);
+                    if (isSelected) newSet.delete(item.id); else newSet.add(item.id);
+                    setForwardSelectedChats(newSet);
+                  }}>
+                    <Image source={{uri: item.avatar}} style={styles.avatarSmall} />
+                    <Text style={styles.forwardContactName}>{item.name}</Text>
+                    {isSelected && <Check size={20} color={themeColor} />}
+                  </TouchableOpacity>
+                );
+              }}
+              keyExtractor={item => item.id}
+            />
+            <View style={styles.forwardFooter}>
+              <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowForwardModal(false)}>
+                <Text style={styles.forwardCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.forwardConfirmBtn, {opacity: forwardSelectedChats.size === 0 ? 0.5 : 1}]}
+                disabled={forwardSelectedChats.size === 0}
+                onPress={() => {
+                  const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                  forwardSelectedChats.forEach(chatId => {
+                    messagesToForward.forEach(msg => {
+                      const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                      const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                      const forwardedMsg: Message = {
+                        ...msg,
+                        id: Date.now().toString() + Math.random(),
+                        sender: 'me',
+                        status: 'sent',
+                        text: forwardedText,
+                      };
+                      dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
+                      dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                    });
+                  });
+                  setShowForwardModal(false);
+                  exitSelectionMode();
+                  closeAllDropdowns();
+                  Alert.alert('Forwarded', `Messages forwarded to ${forwardSelectedChats.size} chats.`);
+                }}
+              >
+                <Text style={styles.forwardConfirmText}>Forward ({forwardSelectedChats.size})</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     );
   }
@@ -1069,7 +1444,14 @@ export default function TabOneScreen() {
                   </View>
                 </TouchableOpacity>
                 <View style={styles.headerActions}>
-                  {showMediaCarousel ? (
+                  {isSelectionMode ? (
+                    <View style={styles.selectionHeader}>
+                      <Text style={styles.selectionCount}>{selectedMessageIds.size}</Text>
+                      <TouchableOpacity style={styles.iconBtn} onPress={exitSelectionMode}>
+                        <X size={24} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : showMediaCarousel ? (
                     <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMediaCarousel(false)}>
                       <X size={24} color="#FFFFFF" />
                     </TouchableOpacity>
@@ -1085,15 +1467,31 @@ export default function TabOneScreen() {
                 </View>
               </View>
 
+              {isSelectionMode && (
+                <View style={styles.selectionActions}>
+                  <TouchableOpacity style={styles.selectionActionBtn} onPress={deleteSelectedMessages}>
+                    <Trash2 size={20} color="#FF6B6B" />
+                    <Text style={styles.selectionActionText}>Delete</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.selectionActionBtn} onPress={forwardSelectedMessages}>
+                    <Send size={20} color={themeColor} />
+                    <Text style={styles.selectionActionText}>Forward</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {showDropdown && (
                 <View style={styles.dropdownMenu}>
                   <FlatList
                     data={dropdownItems}
                     renderItem={({ item }) => (
-                      <TouchableOpacity style={styles.dropdownItem} onPress={() => {
-                        console.log(item.label);
-                        closeAllDropdowns();
-                      }}>
+                      <TouchableOpacity 
+                        style={styles.dropdownItemWithIcon} 
+                        onPress={() => {
+                          item.onPress();
+                        }}
+                      >
+                        <item.icon size={20} color="#FFFFFF" style={{ marginRight: 12 }} />
                         <Text style={styles.dropdownItemText}>{item.label}</Text>
                       </TouchableOpacity>
                     )}
@@ -1103,23 +1501,32 @@ export default function TabOneScreen() {
                 </View>
               )}
 
-              <ImageBackground
-                source={{ uri: chatBackgroundUrl }}
-                style={styles.messagesBg}
-                imageStyle={styles.messagesImage}
-                resizeMode="cover"
+              <TouchableOpacity 
+                style={styles.messagesWrapper}
+                onPress={showDropdown ? closeAllDropdowns : undefined}
+                onLongPress={toggleDropdown}
+                {...(Platform.OS === 'web' ? { onContextMenu: handleContextMenu } : {})}
+                activeOpacity={1}
               >
-                <FlatList
-                  ref={flatListRef}
-                  data={selectedMessages}
-                  renderItem={renderMessage}
-                  keyExtractor={item => item.id}
-                  style={styles.messagesList}
-                  contentContainerStyle={[styles.messagesContainer, styles.flexGrow]}
-                  showsVerticalScrollIndicator={false}
-                  onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                />
-              </ImageBackground>
+                <ImageBackground
+                  source={{ uri: chatBackgroundUrl }}
+                  style={styles.messagesBg}
+                  imageStyle={styles.messagesImage}
+                  resizeMode="cover"
+                >
+                  <FlatList
+                    ref={flatListRef}
+                    data={selectedMessages}
+                    renderItem={renderMessage}
+                    keyExtractor={item => item.id}
+                    style={styles.messagesList}
+                    contentContainerStyle={[styles.messagesContainer, styles.flexGrow]}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                  />
+                </ImageBackground>
+              </TouchableOpacity>
 
               <View style={styles.inputContainer}>
                 <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
@@ -1191,11 +1598,18 @@ export default function TabOneScreen() {
         animationType="fade"
         onRequestClose={() => setShowImageModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.modalClose} onPress={() => setShowImageModal(false)}>
-            <X size={32} color="white" />
-          </TouchableOpacity>
-          <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+        <View style={styles.profileModalOverlay}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileHeaderLeft}>
+              <Text style={styles.profileHeaderName}>{profileName || 'Profile'}</Text>
+            </View>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setShowImageModal(false)}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.flex1, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Image source={{ uri: selectedAvatar }} style={fullImageStyle} />
+          </View>
         </View>
       </Modal>
       {/* Media Carousel Modal */}
@@ -1273,6 +1687,67 @@ export default function TabOneScreen() {
               )}
               keyExtractor={(_, i) => i.toString()}
             />
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={showForwardModal} transparent={false} animationType="slide" onRequestClose={() => setShowForwardModal(false)}>
+        <View style={styles.forwardModal}>
+          <View style={styles.forwardHeader}>
+            <Text style={styles.forwardTitle}>Forward to</Text>
+            <TouchableOpacity onPress={() => setShowForwardModal(false)}>
+              <X size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={state.chats.filter(c => c.type === 'individual')}
+            renderItem={({item}) => {
+              const isSelected = forwardSelectedChats.has(item.id);
+              return (
+                <TouchableOpacity style={styles.forwardContactItem} onPress={() => {
+                  const newSet = new Set(forwardSelectedChats);
+                  if (isSelected) newSet.delete(item.id); else newSet.add(item.id);
+                  setForwardSelectedChats(newSet);
+                }}>
+                  <Image source={{uri: item.avatar}} style={styles.avatarSmall} />
+                  <Text style={styles.forwardContactName}>{item.name}</Text>
+                  {isSelected && <Check size={20} color={themeColor} />}
+                </TouchableOpacity>
+              );
+            }}
+            keyExtractor={item => item.id}
+          />
+          <View style={styles.forwardFooter}>
+            <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowForwardModal(false)}>
+              <Text style={styles.forwardCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.forwardConfirmBtn, {opacity: forwardSelectedChats.size === 0 ? 0.5 : 1}]}
+              disabled={forwardSelectedChats.size === 0}
+              onPress={() => {
+                const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                forwardSelectedChats.forEach(chatId => {
+                  messagesToForward.forEach(msg => {
+                    const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                    const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                    const forwardedMsg: Message = {
+                      ...msg,
+                      id: Date.now().toString() + Math.random(),
+                      sender: 'me',
+                      status: 'sent',
+                      text: forwardedText,
+                    };
+                    dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
+                    dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                  });
+                });
+                setShowForwardModal(false);
+                exitSelectionMode();
+                closeAllDropdowns();
+                Alert.alert('Forwarded', `Messages forwarded to ${forwardSelectedChats.size} chats.`);
+              }}
+            >
+              <Text style={styles.forwardConfirmText}>Forward ({forwardSelectedChats.size})</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1461,6 +1936,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignSelf: 'center'
   },
+  messagesWrapper: {
+    flex: 1,
+  },
   messagesList: {
     flex: 1,
     width: '100%',
@@ -1484,6 +1962,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
+    position: 'relative',
+  },
+  selectionCheckbox: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#526F8A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   messageImage: {
     width: 200,
@@ -1713,7 +2205,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 16,
-    width: 200,
+    width: 220,
     backgroundColor: '#031229',
     borderRadius: 8,
     shadowColor: '#000',
@@ -1722,9 +2214,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     zIndex: 1000,
-    maxHeight: 300,
+    maxHeight: 400,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dropdownItemWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#081730',
   },
   headerDropdownMobile: {
     position: 'absolute',
@@ -1769,11 +2269,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
   },
+  selectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectionCount: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 8,
+    backgroundColor: '#051834',
+    borderBottomWidth: 1,
+    borderBottomColor: '#031229',
+  },
+  selectionActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  selectionActionText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 4,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileModalOverlay: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    height: 60,
+  },
+  profileHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileHeaderName: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginLeft: 12,
   },
   modalClose: {
     position: 'absolute',
@@ -1842,5 +2393,64 @@ const styles = StyleSheet.create({
   previewImage: {
     width: '100%',
     height: '100%',
+  },
+  forwardModal: {
+    flex: 1,
+    backgroundColor: '#051834',
+  },
+  forwardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#031229',
+  },
+  forwardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  forwardContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#031229',
+  },
+  forwardContactName: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  forwardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#031229',
+  },
+  forwardCancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+  },
+  forwardCancelText: {
+    color: '#526F8A',
+    fontSize: 16,
+  },
+  forwardConfirmBtn: {
+    flex: 1,
+    backgroundColor: themeColor,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  forwardConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Modal, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Modal, Alert, StyleSheet, useWindowDimensions, Platform, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Edit3, Save, X, Camera, ChevronLeft } from 'lucide-react-native';
+import { Edit3, Save, X, Camera, ChevronLeft, UserCircle } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1300;
+  const isDesktop = width >= 1300;
+
   const [name, setName] = useState('Alex Morgan');
   const [phoneNumber, setPhoneNumber] = useState('+1 (555) 123-4567');
   const [email, setEmail] = useState('alex.morgan@example.com');
@@ -15,14 +20,14 @@ export default function ProfileScreen() {
   const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dXNlcnxlbnwwfHwwfHx8MA%3D%3D');
 
   const avatarOptions = [
+    'https://cdn-icons-png.flaticon.com/512/5951/5951752.png',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRI9lRck6miglY0SZF_BZ_sK829yiNskgYRUg&s',
+    'https://img.favpng.com/14/10/5/avatar-user-profile-icon-png-favpng-w8H8CadkGbye4icvhum6eFGsj.jpg',
+    'https://media.licdn.com/dms/image/v2/D4D35AQG1GZp8053TSg/profile-framedphoto-shrink_200_200/profile-framedphoto-shrink_200_200/0/1699540118351?e=1760860800&v=beta&t=6o-kv9BA_w5_70pea4x1UW0ZYWm7n_JG46-4lJk7hvM',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60',
     'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=60',
     'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60',
-    'https://images.unsplash.com/photo-1533227268428-f9ed7c3c8e37?w=150&auto=format&fit=crop&q=60',
-    'https://images.unsplash.com/photo-1524504388940-7b8a6c5e8b0a?w=150&auto=format&fit=crop&q=60',
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60',
-    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60'
   ];
 
   const handleSave = () => {
@@ -39,112 +44,304 @@ export default function ProfileScreen() {
     setProfileImage(imageUri);
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <ChevronLeft size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity 
-            onPress={() => setIsEditing(!isEditing)}
-            style={styles.editButton}
-          >
-            {isEditing ? (
-              <Save size={24} color="#FFFFFF" />
-            ) : (
-              <Edit3 size={24} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        {/* Profile Image Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: profileImage }} 
-              style={styles.avatar}
-            />
-            {isEditing && (
-              <TouchableOpacity 
-                onPress={() => setIsAboutModalVisible(true)}
-                style={styles.cameraButton}
-              >
-                <Camera size={16} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
+  if (isMobile) {
+    return (
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <ChevronLeft size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity
+              onPress={() => setIsEditing(!isEditing)}
+              style={styles.editButton}
+            >
+              {isEditing ? (
+                <Save size={24} color="#FFFFFF" />
+              ) : (
+                <Edit3 size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>{name}</Text>
-          <Text style={styles.onlineStatus}>Online</Text>
         </View>
 
-        {/* Profile Details */}
-        <View style={styles.detailsCard}>
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Name</Text>
-            {isEditing ? (
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                style={styles.inputField}
+        <ScrollView style={styles.scrollView}>
+          {/* Profile Image Section */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatar}
               />
-            ) : (
-              <Text style={styles.fieldValue}>{name}</Text>
-            )}
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Phone Number</Text>
-            {isEditing ? (
-              <TextInput
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                style={styles.inputField}
-                keyboardType="phone-pad"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{phoneNumber}</Text>
-            )}
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Email</Text>
-            {isEditing ? (
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                style={styles.inputField}
-                keyboardType="email-address"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{email}</Text>
-            )}
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <View style={styles.aboutHeader}>
-              <Text style={styles.fieldLabel}>About</Text>
               {isEditing && (
-                <TouchableOpacity onPress={() => setIsAboutModalVisible(true)}>
-                  <Edit3 size={18} color="#FFDA7C" />
+                <TouchableOpacity
+                  onPress={() => setIsAboutModalVisible(true)}
+                  style={styles.cameraButton}
+                >
+                  <Camera size={16} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
             </View>
-            {isEditing ? (
-              <Text style={styles.fieldValue}>{about}</Text>
-            ) : (
-              <Text style={styles.fieldValue}>{about}</Text>
-            )}
+            <Text style={styles.profileName}>{name}</Text>
+            <Text style={styles.onlineStatus}>Online</Text>
+          </View>
+
+          {/* Profile Details */}
+          <View style={styles.detailsCard}>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Name</Text>
+              {isEditing ? (
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  style={styles.inputField}
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{name}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              {isEditing ? (
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  style={styles.inputField}
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{phoneNumber}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              {isEditing ? (
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.inputField}
+                  keyboardType="email-address"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{email}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <View style={styles.aboutHeader}>
+                <Text style={styles.fieldLabel}>About</Text>
+                {isEditing && (
+                  <TouchableOpacity onPress={() => setIsAboutModalVisible(true)}>
+                    <Edit3 size={18} color="#FFDA7C" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {isEditing ? (
+                <Text style={styles.fieldValue}>{about}</Text>
+              ) : (
+                <Text style={styles.fieldValue}>{about}</Text>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* About Edit Modal */}
+        <Modal
+          visible={isAboutModalVisible}
+          animationType="slide"
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit About</Text>
+                <TouchableOpacity onPress={() => setIsAboutModalVisible(false)}>
+                  <X size={24} color="#526F8A" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalField}>
+                <Text style={styles.fieldLabel}>About</Text>
+                <TextInput
+                  value={tempAbout}
+                  onChangeText={setTempAbout}
+                  style={styles.modalInput}
+                  multiline={true}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={handleAboutSave}
+                style={styles.modalSaveButton}
+              >
+                <Text style={styles.modalSaveButtonText}>Save</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.avatarLabel}>Choose Avatar</Text>
+              <ScrollView horizontal={true} style={styles.avatarScroll}>
+                {avatarOptions.map((imageUri, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handleImageSelect(imageUri)}
+                    style={[
+                      styles.avatarOption,
+                      profileImage === imageUri && styles.selectedAvatar
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.avatarOptionImage}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {isEditing && (
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  // Tablet/Desktop layout
+  return (
+    <View style={styles.desktopContainer}>
+      {/* Left Pane - Profile Content */}
+      <View style={[
+        styles.leftPane,
+        { width: isDesktop ? 460 : 300 }
+      ]}>
+
+        {/* Header with back, title, and edit button */}
+        <View style={styles.rightHeader}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <ChevronLeft size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity
+              onPress={() => setIsEditing(!isEditing)}
+              style={styles.editButton}
+            >
+              {isEditing ? (
+                <Save size={24} color="#FFFFFF" />
+              ) : (
+                <Edit3 size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+
+        <ScrollView style={styles.leftScrollView}>
+          {/* Profile Image Section */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatar}
+              />
+              {isEditing && (
+                <TouchableOpacity
+                  onPress={() => setIsAboutModalVisible(true)}
+                  style={styles.cameraButton}
+                >
+                  <Camera size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.profileName}>{name}</Text>
+            <Text style={styles.onlineStatus}>Online</Text>
+          </View>
+
+          {/* Profile Details */}
+          <View style={styles.detailsCard}>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Name</Text>
+              {isEditing ? (
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  style={styles.inputField}
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{name}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              {isEditing ? (
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  style={styles.inputField}
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{phoneNumber}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              {isEditing ? (
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.inputField}
+                  keyboardType="email-address"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{email}</Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <View style={styles.aboutHeader}>
+                <Text style={styles.fieldLabel}>About</Text>
+                {isEditing && (
+                  <TouchableOpacity onPress={() => setIsAboutModalVisible(true)}>
+                    <Edit3 size={18} color="#FFDA7C" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.fieldValue}>{about}</Text>
+            </View>
+          </View>
+        </ScrollView>
+        {isEditing && (
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save Changes</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Right Pane - Fixed Header and Title */}
+      <View style={styles.rightPane}>
+        {/* Fixed centered text box */}
+        <View style={styles.rightContent}>
+          <View style={styles.fixedTextBox}>
+            <UserCircle size={56} color="#FFFFFF" />
+            <Text style={styles.fixedText}>Profile</Text>
+          </View>
+        </View>
+      </View>
 
       {/* About Edit Modal */}
       <Modal
@@ -160,7 +357,7 @@ export default function ProfileScreen() {
                 <X size={24} color="#526F8A" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalField}>
               <Text style={styles.fieldLabel}>About</Text>
               <TextInput
@@ -171,27 +368,27 @@ export default function ProfileScreen() {
                 textAlignVertical="top"
               />
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               onPress={handleAboutSave}
               style={styles.modalSaveButton}
             >
               <Text style={styles.modalSaveButtonText}>Save</Text>
             </TouchableOpacity>
-            
+
             <Text style={styles.avatarLabel}>Choose Avatar</Text>
             <ScrollView horizontal={true} style={styles.avatarScroll}>
               {avatarOptions.map((imageUri, index) => (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   onPress={() => handleImageSelect(imageUri)}
                   style={[
                     styles.avatarOption,
                     profileImage === imageUri && styles.selectedAvatar
                   ]}
                 >
-                  <Image 
-                    source={{ uri: imageUri }} 
+                  <Image
+                    source={{ uri: imageUri }}
                     style={styles.avatarOptionImage}
                   />
                 </TouchableOpacity>
@@ -200,12 +397,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      {isEditing && (
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Changes</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -216,6 +407,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B141A',
+  },
+  desktopContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#0B141A',
+  },
+  leftPane: {
+    borderRightWidth: 1,
+    borderRightColor: '#081730',
+    backgroundColor: '#051834',
+  },
+  leftScrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  rightPane: {
+    flex: 1,
+    backgroundColor: '#031229',
+  },
+  rightHeader: {
+    backgroundColor: '#031229',
+    paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 10,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#081730',
+  },
+  rightContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fixedTextBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+  },
+  fixedText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   header: {
     backgroundColor: '#051834',
@@ -271,7 +509,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: themeColor,
+    backgroundColor: '#526F8A',
     borderRadius: 20,
     width: 40,
     height: 40,
@@ -334,7 +572,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    height: '60%',
+    height: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -360,7 +598,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   modalSaveButton: {
-    backgroundColor: themeColor,
+    backgroundColor: 'rgba(255, 255, 255, 0.49)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -377,7 +617,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarScroll: {
-    maxHeight: 96,
+    maxHeight: 67,
   },
   avatarOption: {
     marginRight: 12,
@@ -397,13 +637,15 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 16,
     right: 16,
-    backgroundColor: themeColor,
+    backgroundColor: 'rgba(255, 255, 255, 0.49)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
