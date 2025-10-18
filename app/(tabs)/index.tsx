@@ -543,7 +543,12 @@ export default function TabOneScreen() {
     return (
       <TouchableOpacity 
         onPress={() => isSelectionMode ? toggleMessageSelection(item.id) : null}
-        onLongPress={() => !isSelectionMode && enterSelectionMode()}
+        onLongPress={() => {
+          if (!isSelectionMode) {
+            enterSelectionMode();
+            toggleMessageSelection(item.id);
+          }
+        }}
         style={[
           styles.messageContainer,
           { justifyContent: isMe ? 'flex-end' : 'flex-start' }
@@ -1043,10 +1048,16 @@ export default function TabOneScreen() {
                   disabled={forwardSelectedChats.size === 0}
                   onPress={() => {
                     const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     forwardSelectedChats.forEach(chatId => {
                       messagesToForward.forEach(msg => {
-                        const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
-                        const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                        let forwardText = msg.text || '';
+                        let originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                        if (forwardText.startsWith('Forwarded: ')) {
+                          forwardText = forwardText.substring('Forwarded: '.length);
+                          originalText = forwardText;
+                        }
+                        const forwardedText = forwardText ? `Forwarded: ${forwardText}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
                         const forwardedMsg: Message = {
                           ...msg,
                           id: Date.now().toString() + Math.random(),
@@ -1055,7 +1066,7 @@ export default function TabOneScreen() {
                           text: forwardedText,
                         };
                         dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
-                        dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                        dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: currentTime, unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
                       });
                     });
                     setShowForwardModal(false);
@@ -1355,10 +1366,16 @@ export default function TabOneScreen() {
                 disabled={forwardSelectedChats.size === 0}
                 onPress={() => {
                   const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                  const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   forwardSelectedChats.forEach(chatId => {
                     messagesToForward.forEach(msg => {
-                      const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
-                      const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                      let forwardText = msg.text || '';
+                      let originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                      if (forwardText.startsWith('Forwarded: ')) {
+                        forwardText = forwardText.substring('Forwarded: '.length);
+                        originalText = forwardText;
+                      }
+                      const forwardedText = forwardText ? `Forwarded: ${forwardText}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
                       const forwardedMsg: Message = {
                         ...msg,
                         id: Date.now().toString() + Math.random(),
@@ -1367,7 +1384,7 @@ export default function TabOneScreen() {
                         text: forwardedText,
                       };
                       dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
-                      dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                      dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: currentTime, unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
                     });
                   });
                   setShowForwardModal(false);
@@ -1725,10 +1742,16 @@ export default function TabOneScreen() {
               disabled={forwardSelectedChats.size === 0}
               onPress={() => {
                 const messagesToForward = Array.from(selectedMessageIds).map(id => selectedMessages.find(m => m.id === id)).filter(Boolean) as Message[];
+                const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 forwardSelectedChats.forEach(chatId => {
                   messagesToForward.forEach(msg => {
-                    const originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
-                    const forwardedText = msg.text ? `Forwarded: ${msg.text}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
+                    let forwardText = msg.text || '';
+                    let originalText = msg.text || (msg.imageUrl ? 'Photo' : 'Media');
+                    if (forwardText.startsWith('Forwarded: ')) {
+                      forwardText = forwardText.substring('Forwarded: '.length);
+                      originalText = forwardText;
+                    }
+                    const forwardedText = forwardText ? `Forwarded: ${forwardText}` : (msg.imageUrl ? 'Forwarded photo' : 'Forwarded message');
                     const forwardedMsg: Message = {
                       ...msg,
                       id: Date.now().toString() + Math.random(),
@@ -1737,7 +1760,7 @@ export default function TabOneScreen() {
                       text: forwardedText,
                     };
                     dispatch({ type: 'ADD_MESSAGE', payload: { chatId, message: forwardedMsg } });
-                    dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
+                    dispatch({ type: 'UPDATE_CHAT', payload: { id: chatId, updates: { lastMessage: originalText, time: currentTime, unread: (state.chats.find(c => c.id === chatId)?.unread || 0) + 1, timestamp: Date.now() } } });
                   });
                 });
                 setShowForwardModal(false);

@@ -11,9 +11,12 @@ import {
   Modal,
   ScrollView,
   SectionList,
-  Alert
+  Alert,
+  PermissionsAndroid,
+  Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Contacts from 'expo-contacts';
 import {
   Search,
   ChevronRight,
@@ -63,84 +66,61 @@ export default function ContactsScreen() {
   const sectionListRef = useRef<SectionList<Contact, ContactSection>>(null);
 
   useEffect(() => {
-    const mockContacts: Contact[] = [
-      {
-        id: '9',
-        name: 'Alex Morgan',
-        avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=60',
-        about: 'Loves coding and coffee ☕',
-        time: '10:30 AM',
-        unread: 0,
-        online: true
-      },
-      {
-        id: '10',
-        name: 'David Kim',
-        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=60',
-        about: 'Designer and artist 🎨',
-        time: '9:45 AM',
-        unread: 3,
-        online: false
-      },
-      {
-        id: '11',
-        name: 'Emma Wilson',
-        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=60',
-        about: 'Fitness enthusiast 🏃‍♀️',
-        time: 'Yesterday',
-        unread: 0,
-        online: true
-      },
-      {
-        id: '12',
-        name: 'James Wilson',
-        avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=150&auto=format&fit=crop&q=60',
-        about: 'Music lover 🎵',
-        time: 'Yesterday',
-        unread: 1,
-        online: false
-      },
-      {
-        id: '13',
-        name: 'Lisa Anderson',
-        avatar: 'https://images.unsplash.com/photo-1578445714074-946b536079aa?w=150&auto=format&fit=crop&q=60',
-        about: 'Traveler and photographer 📸',
-        time: '2 days ago',
-        unread: 0,
-        online: false
-      },
-      {
-        id: '14',
-        name: 'Mike Chen',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60',
-        about: 'Tech enthusiast 💻',
-        time: '2 days ago',
-        unread: 5,
-        online: true
-      },
-      {
-        id: '15',
-        name: 'Sarah Johnson',
-        avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&auto=format&fit=crop&q=60',
-        about: 'Bookworm 📚',
-        time: '3 days ago',
-        unread: 0,
-        online: false
-      },
-      {
-        id: '16',
-        name: 'Sophia Martinez',
-        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=60',
-        about: 'Chef and foodie 🍳',
-        time: '3 days ago',
-        unread: 0,
-        online: true
-      }
-    ];
-    // Sort contacts alphabetically
-    const sortedContacts = mockContacts.sort((a, b) => a.name.localeCompare(b.name));
-    setContacts(sortedContacts);
+    fetchContacts();
   }, []);
+
+  const fetchContacts = async () => {
+    try {
+      // Request contact access permission
+      const { status } = await Contacts.requestPermissionsAsync();
+
+      if (status === 'granted') {
+        // Fetch contacts with name, phone numbers, and image
+        const { data } = await Contacts.getContactsAsync({
+          fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Image],
+        });
+
+        if (data.length > 0) {
+          const processedContacts: Contact[] = data
+            .filter(contact => contact.name && contact.phoneNumbers && contact.phoneNumbers.length > 0)
+            .map(contact => {
+              const fullName = contact.name || 'Unknown';
+              const phone = contact.phoneNumbers?.[0]?.number || '';
+              const photo = contact.image?.uri
+                ? contact.image.uri
+                : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60';
+
+              return {
+                id: contact.id || Date.now().toString(),
+                name: fullName,
+                avatar: photo,
+                about: phone ? `Phone: ${phone}` : 'No number available',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                unread: 0,
+                online: false,
+              };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+          setContacts(processedContacts);
+
+          // Optional: Send contacts to backend for matching with registered users
+          // await fetch("https://your-server.com/api/syncContacts", {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json" },
+          //   body: JSON.stringify({ contacts: processedContacts }),
+          // });
+        } else {
+          Alert.alert('No Contacts', 'No contacts found on this device.');
+        }
+      } else {
+        Alert.alert('Permission Denied', 'You must allow contacts access to sync them.');
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      Alert.alert('Error', 'Failed to load contacts. Please try again later.');
+    }
+  };
 
   const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -247,8 +227,8 @@ export default function ContactsScreen() {
     const newContact: Contact = {
       id: Date.now().toString(),
       name: fullName,
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60',
-      about: 'New contact',
+      avatar: 'https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=',
+      about: `Phone: ${phoneNumber}`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       unread: 0,
       online: false
@@ -626,14 +606,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   saveButton: {
-    backgroundColor: '#020E20',
+    backgroundColor: themeColor,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   saveButtonText: {
-    color: '#526F8A',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
