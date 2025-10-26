@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Mail, Phone, User, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native'; // Assuming lucide-react-native is installed
+import { Mail, Phone, User, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 

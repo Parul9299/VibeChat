@@ -47,7 +47,9 @@ import {
   AlertTriangle,
   Ban as BlockIcon,
   Trash2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Gift,
+  Smile
 } from 'lucide-react-native';
 
 interface Chat {
@@ -169,6 +171,12 @@ export default function TabOneScreen() {
   const flatListRef = useRef<FlatList>(null);
   const carouselFlatListRef = useRef<FlatList>(null);
 
+  // New states for attachments and stickers
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventData, setEventData] = useState({ name: '', description: '', date: '', time: '', location: '' });
+
   useEffect(() => {
     if (!state.selectedChatId) {
       setShowInfo(false);
@@ -265,6 +273,8 @@ export default function TabOneScreen() {
     'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&fit=crop'
   ];
 
+  const mockEmojis = ['😀', '😂', '❤️', '🔥', '👍', '🎉', '🌟', '🚀', '💯', '👏'];
+
   const headerDropdownItems = [
     { label: 'Settings' },
     { label: 'Profile' },
@@ -274,6 +284,8 @@ export default function TabOneScreen() {
   const closeAllDropdowns = () => {
     setShowDropdown(false);
     setShowHeaderDropdown(false);
+    setShowAttachmentMenu(false);
+    setShowStickerPicker(false);
     if (!isSelectionMode) setSelectedMessageIds(new Set());
   };
 
@@ -453,6 +465,121 @@ export default function TabOneScreen() {
     setNewMessage('');
     closeAllDropdowns();
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  // New functions for attachments and stickers
+  const toggleAttachmentMenu = () => {
+    setShowAttachmentMenu(!showAttachmentMenu);
+    closeAllDropdowns();
+  };
+
+  const toggleStickerPicker = () => {
+    setShowStickerPicker(!showStickerPicker);
+    closeAllDropdowns();
+  };
+
+  const addImageMessage = () => {
+    if (!state.selectedChatId) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message: Message = {
+      id: Date.now().toString(),
+      text: '',
+      sender: 'me',
+      time: currentTime,
+      status: 'sent',
+      imageUrl: mediaImages[Math.floor(Math.random() * mediaImages.length)] // Mock image
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: 'Photo', time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const addAudioMessage = () => {
+    if (!state.selectedChatId) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message: Message = {
+      id: Date.now().toString(),
+      text: 'Audio message (mock)',
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: 'Audio', time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const addVideoMessage = () => {
+    if (!state.selectedChatId) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message: Message = {
+      id: Date.now().toString(),
+      text: 'Video message (mock)',
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: 'Video', time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const addDocumentMessage = () => {
+    if (!state.selectedChatId) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message: Message = {
+      id: Date.now().toString(),
+      text: 'Document shared (mock)',
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: 'Document', time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const addContactMessage = () => {
+    if (!state.selectedChatId) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const message: Message = {
+      id: Date.now().toString(),
+      text: 'Contact shared (mock)',
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: 'Contact', time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const openEventModal = () => {
+    setShowAttachmentMenu(false);
+    setShowEventModal(true);
+  };
+
+  const saveEvent = () => {
+    if (!state.selectedChatId || !eventData.name.trim()) return;
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const eventText = `Event: ${eventData.name}\nDescription: ${eventData.description}\nDate & Time: ${eventData.date} ${eventData.time}\nLocation: ${eventData.location || 'Not specified'}`;
+    const message: Message = {
+      id: Date.now().toString(),
+      text: eventText,
+      sender: 'me',
+      time: currentTime,
+      status: 'sent'
+    };
+    dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.selectedChatId!, message } });
+    dispatch({ type: 'UPDATE_CHAT', payload: { id: state.selectedChatId!, updates: { lastMessage: `Event: ${eventData.name}`, time: currentTime, unread: 0, timestamp: Date.now() } } });
+    setEventData({ name: '', description: '', date: '', time: '', location: '' });
+    setShowEventModal(false);
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const addStickerOrEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    setShowStickerPicker(false);
   };
 
   const handleOutsideClick = () => {
@@ -692,6 +819,15 @@ export default function TabOneScreen() {
     { label: 'Report', icon: AlertTriangle, onPress: reportChat },
     { label: 'Block', icon: BlockIcon, onPress: blockChat },
     { label: 'Clear chat', icon: Trash2, onPress: clearChat },
+  ];
+
+  const attachmentMenuItems = [
+    { label: 'Images', icon: ImageIcon, onPress: addImageMessage },
+    { label: 'Audios', icon: Mic, onPress: addAudioMessage },
+    { label: 'Videos', icon: Video, onPress: addVideoMessage },
+    { label: 'Documents', icon: Paperclip, onPress: addDocumentMessage },
+    { label: 'Contacts', icon: User, onPress: addContactMessage },
+    { label: 'Event', icon: Clock, onPress: openEventModal },
   ];
 
   const fullImageStyle = {
@@ -1080,6 +1216,109 @@ export default function TabOneScreen() {
               </View>
             </View>
           </Modal>
+          {/* Attachment Menu Modal */}
+          <Modal visible={showAttachmentMenu} transparent animationType="fade" onRequestClose={() => setShowAttachmentMenu(false)}>
+            <TouchableWithoutFeedback onPress={() => setShowAttachmentMenu(false)}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.attachmentMenu}>
+                  <FlatList
+                    data={attachmentMenuItems}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity 
+                        style={styles.dropdownItemWithIcon} 
+                        onPress={() => {
+                          item.onPress();
+                        }}
+                      >
+                        <item.icon size={20} color="#FFFFFF" style={{ marginRight: 12 }} />
+                        <Text style={styles.dropdownItemText}>{item.label}</Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item) => item.label}
+                    showsVerticalScrollIndicator={false}
+                  />
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+          {/* Sticker Picker Modal */}
+          <Modal visible={showStickerPicker} transparent animationType="fade" onRequestClose={() => setShowStickerPicker(false)}>
+            <TouchableWithoutFeedback onPress={() => setShowStickerPicker(false)}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.stickerPicker}>
+                  <FlatList
+                    data={mockEmojis}
+                    numColumns={5}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity 
+                        style={styles.emojiItem}
+                        onPress={() => addStickerOrEmoji(item)}
+                      >
+                        <Text style={styles.emojiText}>{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item) => item}
+                  />
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+          {/* Event Modal */}
+          <Modal visible={showEventModal} transparent={false} animationType="slide" onRequestClose={() => setShowEventModal(false)}>
+            <View style={styles.eventModal}>
+              <View style={styles.forwardHeader}>
+                <Text style={styles.forwardTitle}>Create Event</Text>
+                <TouchableOpacity onPress={() => setShowEventModal(false)}>
+                  <X size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.eventScroll}>
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Event Name"
+                  value={eventData.name}
+                  onChangeText={(text) => setEventData({ ...eventData, name: text })}
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Description"
+                  multiline
+                  value={eventData.description}
+                  onChangeText={(text) => setEventData({ ...eventData, description: text })}
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Date (YYYY-MM-DD)"
+                  value={eventData.date}
+                  onChangeText={(text) => setEventData({ ...eventData, date: text })}
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Time (HH:MM)"
+                  value={eventData.time}
+                  onChangeText={(text) => setEventData({ ...eventData, time: text })}
+                />
+                <TextInput
+                  style={styles.eventInput}
+                  placeholder="Location (optional)"
+                  value={eventData.location}
+                  onChangeText={(text) => setEventData({ ...eventData, location: text })}
+                />
+              </ScrollView>
+              <View style={styles.forwardFooter}>
+                <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowEventModal(false)}>
+                  <Text style={styles.forwardCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.forwardConfirmBtn, {opacity: !eventData.name.trim() ? 0.5 : 1}]}
+                  disabled={!eventData.name.trim()}
+                  onPress={saveEvent}
+                >
+                  <Text style={styles.forwardConfirmText}>Save Event</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       );
     }
@@ -1199,7 +1438,12 @@ export default function TabOneScreen() {
           </TouchableOpacity>
 
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={toggleStickerPicker}>
+              <Smile size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={toggleAttachmentMenu}>
+              <Paperclip size={24} color="#FFFFFF" />
+            </TouchableOpacity>
             <TextInput
               style={styles.input}
               placeholder="Type a message"
@@ -1398,6 +1642,109 @@ export default function TabOneScreen() {
             </View>
           </View>
         </Modal>
+        {/* Attachment Menu Modal for mobile chat */}
+        <Modal visible={showAttachmentMenu} transparent animationType="fade" onRequestClose={() => setShowAttachmentMenu(false)}>
+          <TouchableWithoutFeedback onPress={() => setShowAttachmentMenu(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.attachmentMenu}>
+                <FlatList
+                  data={attachmentMenuItems}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity 
+                      style={styles.dropdownItemWithIcon} 
+                      onPress={() => {
+                        item.onPress();
+                      }}
+                    >
+                      <item.icon size={20} color="#FFFFFF" style={{ marginRight: 12 }} />
+                      <Text style={styles.dropdownItemText}>{item.label}</Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item) => item.label}
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+        {/* Sticker Picker Modal for mobile chat */}
+        <Modal visible={showStickerPicker} transparent animationType="fade" onRequestClose={() => setShowStickerPicker(false)}>
+          <TouchableWithoutFeedback onPress={() => setShowStickerPicker(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.stickerPicker}>
+                <FlatList
+                  data={mockEmojis}
+                  numColumns={5}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity 
+                      style={styles.emojiItem}
+                      onPress={() => addStickerOrEmoji(item)}
+                    >
+                      <Text style={styles.emojiText}>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item) => item}
+                />
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+        {/* Event Modal for mobile chat */}
+        <Modal visible={showEventModal} transparent={false} animationType="slide" onRequestClose={() => setShowEventModal(false)}>
+          <View style={styles.eventModal}>
+            <View style={styles.forwardHeader}>
+              <Text style={styles.forwardTitle}>Create Event</Text>
+              <TouchableOpacity onPress={() => setShowEventModal(false)}>
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.eventScroll}>
+              <TextInput
+                style={styles.eventInput}
+                placeholder="Event Name"
+                value={eventData.name}
+                onChangeText={(text) => setEventData({ ...eventData, name: text })}
+              />
+              <TextInput
+                style={styles.eventInput}
+                placeholder="Description"
+                multiline
+                value={eventData.description}
+                onChangeText={(text) => setEventData({ ...eventData, description: text })}
+              />
+              <TextInput
+                style={styles.eventInput}
+                placeholder="Date (YYYY-MM-DD)"
+                value={eventData.date}
+                onChangeText={(text) => setEventData({ ...eventData, date: text })}
+              />
+              <TextInput
+                style={styles.eventInput}
+                placeholder="Time (HH:MM)"
+                value={eventData.time}
+                onChangeText={(text) => setEventData({ ...eventData, time: text })}
+              />
+              <TextInput
+                style={styles.eventInput}
+                placeholder="Location (optional)"
+                value={eventData.location}
+                onChangeText={(text) => setEventData({ ...eventData, location: text })}
+              />
+            </ScrollView>
+            <View style={styles.forwardFooter}>
+              <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowEventModal(false)}>
+                <Text style={styles.forwardCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.forwardConfirmBtn, {opacity: !eventData.name.trim() ? 0.5 : 1}]}
+                disabled={!eventData.name.trim()}
+                onPress={saveEvent}
+              >
+                <Text style={styles.forwardConfirmText}>Save Event</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     );
   }
@@ -1546,7 +1893,12 @@ export default function TabOneScreen() {
               </TouchableOpacity>
 
               <View style={styles.inputContainer}>
-                <TouchableOpacity style={styles.iconBtn} onPress={closeAllDropdowns}><Paperclip size={24} color="#FFFFFF" /></TouchableOpacity>
+                <TouchableOpacity style={styles.iconBtn} onPress={toggleStickerPicker}>
+                  <Smile size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconBtn} onPress={toggleAttachmentMenu}>
+                  <Paperclip size={24} color="#FFFFFF" />
+                </TouchableOpacity>
                 <TextInput
                   style={styles.input}
                   placeholder="Type a message"
@@ -1770,6 +2122,109 @@ export default function TabOneScreen() {
               }}
             >
               <Text style={styles.forwardConfirmText}>Forward ({forwardSelectedChats.size})</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Attachment Menu for tablet/desktop */}
+      <Modal visible={showAttachmentMenu} transparent animationType="fade" onRequestClose={() => setShowAttachmentMenu(false)}>
+        <TouchableWithoutFeedback onPress={() => setShowAttachmentMenu(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.attachmentMenu}>
+              <FlatList
+                data={attachmentMenuItems}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.dropdownItemWithIcon} 
+                    onPress={() => {
+                      item.onPress();
+                    }}
+                  >
+                    <item.icon size={20} color="#FFFFFF" style={{ marginRight: 12 }} />
+                    <Text style={styles.dropdownItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.label}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      {/* Sticker Picker for tablet/desktop */}
+      <Modal visible={showStickerPicker} transparent animationType="fade" onRequestClose={() => setShowStickerPicker(false)}>
+        <TouchableWithoutFeedback onPress={() => setShowStickerPicker(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.stickerPicker}>
+              <FlatList
+                data={mockEmojis}
+                numColumns={5}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.emojiItem}
+                    onPress={() => addStickerOrEmoji(item)}
+                  >
+                    <Text style={styles.emojiText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item}
+              />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      {/* Event Modal for tablet/desktop */}
+      <Modal visible={showEventModal} transparent={false} animationType="slide" onRequestClose={() => setShowEventModal(false)}>
+        <View style={styles.eventModal}>
+          <View style={styles.forwardHeader}>
+            <Text style={styles.forwardTitle}>Create Event</Text>
+            <TouchableOpacity onPress={() => setShowEventModal(false)}>
+              <X size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.eventScroll}>
+            <TextInput
+              style={styles.eventInput}
+              placeholder="Event Name"
+              value={eventData.name}
+              onChangeText={(text) => setEventData({ ...eventData, name: text })}
+            />
+            <TextInput
+              style={styles.eventInput}
+              placeholder="Description"
+              multiline
+              value={eventData.description}
+              onChangeText={(text) => setEventData({ ...eventData, description: text })}
+            />
+            <TextInput
+              style={styles.eventInput}
+              placeholder="Date (YYYY-MM-DD)"
+              value={eventData.date}
+              onChangeText={(text) => setEventData({ ...eventData, date: text })}
+            />
+            <TextInput
+              style={styles.eventInput}
+              placeholder="Time (HH:MM)"
+              value={eventData.time}
+              onChangeText={(text) => setEventData({ ...eventData, time: text })}
+            />
+            <TextInput
+              style={styles.eventInput}
+              placeholder="Location (optional)"
+              value={eventData.location}
+              onChangeText={(text) => setEventData({ ...eventData, location: text })}
+            />
+          </ScrollView>
+          <View style={styles.forwardFooter}>
+            <TouchableOpacity style={styles.forwardCancelBtn} onPress={() => setShowEventModal(false)}>
+              <Text style={styles.forwardCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.forwardConfirmBtn, {opacity: !eventData.name.trim() ? 0.5 : 1}]}
+              disabled={!eventData.name.trim()}
+              onPress={saveEvent}
+            >
+              <Text style={styles.forwardConfirmText}>Save Event</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -2322,9 +2777,50 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  attachmentMenu: {
+    backgroundColor: '#031229',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    maxHeight: 300,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  stickerPicker: {
+    backgroundColor: '#031229',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    maxHeight: 300,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  emojiItem: {
+    padding: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiText: {
+    fontSize: 24,
+  },
+  eventModal: {
+    flex: 1,
+    backgroundColor: '#051834',
+  },
+  eventScroll: {
+    flex: 1,
+    padding: 16,
+  },
+  eventInput: {
+    backgroundColor: '#031229',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    color: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   profileModalOverlay: {
     flex: 1,

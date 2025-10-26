@@ -133,17 +133,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sidebar: {
-    width: 70,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
+    width: 55,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
   },
   sidebarItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 7,
     marginVertical: 4,
-    borderRadius: 8,
+    borderRadius: '50%',
   },
   sidebarText: {
     marginLeft: 12,
