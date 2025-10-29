@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Vibechat",
+    "slug": "vibechat",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "vibechat",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -13,25 +13,22 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.sharma9299.frontend"
+      "package": "com.sharma9299.vibechat"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.ico"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -48,8 +45,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "15ae247a-c354-4406-a9f5-02ee3e2fdd30"
+        "projectId": "ce1f2c47-e13c-4824-9574-9fe82bf84c8e"
       }
-    }
+    },
+    "owner": "sharma9299"
   }
 }

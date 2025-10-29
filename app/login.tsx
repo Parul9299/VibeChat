@@ -1,3 +1,4 @@
+//login.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -15,8 +16,9 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Mail, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native'; // Assuming lucide-react-native is installed
+import axiosInstance from "./api/axiosInstance"; // path adjust kar le
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const LoginScreen: React.FC = () => {
   const router = useRouter();
@@ -29,49 +31,86 @@ const LoginScreen: React.FC = () => {
   const themeColor: string = '#8B5CF6';
   const themeColorLight: string = '#C4B5FD';
 
-  const handleSignIn = async (): Promise<void> => {
-    if (!email || !password) {
-      setError('Please enter email and password');
-      return;
-    }
+  // const handleSignIn = async (): Promise<void> => {
+  //   if (!email || !password) {
+  //     setError('Please enter email and password');
+  //     return;
+  //   }
 
-    setLoading(true);
-    setError('');
+  //   setLoading(true);
+  //   setError('');
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ email, password }),
+  //     });
 
-      const data = await response.json();
-      console.log('Login response data:', data.accessToken); // Debugging line
+  //     const data = await response.json();
+  //     console.log('Login response data:', data.accessToken); // Debugging line
 
-      if (!response.ok) {
-        setError(data.message || 'Login failed');
-        return;
-      }
+  //     if (!response.ok) {
+  //       setError(data.message || 'Login failed');
+  //       return;
+  //     }
 
-      // Store token
-      await AsyncStorage.setItem('userToken', JSON.stringify(data.accessToken));
+  //     // Store token
+  //     await AsyncStorage.setItem('userToken', JSON.stringify(data.accessToken));
       
-      // Optionally store user data if returned
-      if (data.user) {
-        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-      }
+  //     // Optionally store user data if returned
+  //     if (data.user) {
+  //       await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+  //     }
 
-      // Navigate to home route
-      console.log('Login successful, redirecting to tabs...');
-      router.replace('/');
-      console.log('Redirecting to:', '/(tabs)/');
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('Login error:', err);
-    } finally {
-      setLoading(false);
+  //     // Navigate to home route
+  //     console.log('Login successful, redirecting to tabs...');
+  //     router.replace('/');
+  //     console.log('Redirecting to:', '/(tabs)/');
+  //   } catch (err) {
+  //     setError('Network error. Please try again.');
+  //     console.error('Login error:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
+const handleSignIn = async (): Promise<void> => {
+  if (!email || !password) {
+    setError('Please enter email and password');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const response = await axiosInstance.post('/auth/login', {
+      email,
+      password,
+    });
+
+    const data = response.data;
+    console.log('Login response data:', data);
+
+    await AsyncStorage.setItem('userToken', JSON.stringify(data.accessToken));
+
+    if (data.user) {
+      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
     }
-  };
+
+    router.replace('/');
+  } catch (err: any) {
+    console.error('Login error:', err.response?.data || err.message);
+    setError(err.response?.data?.message || 'Network error. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const getCheckboxIconWrapperStyle = (): ViewStyle => ({
     width: 24,

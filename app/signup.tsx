@@ -1,3 +1,5 @@
+//signup.tsx
+
 import React, { useState } from 'react';
 import {
   View,
@@ -15,8 +17,8 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Mail, Phone, User, Lock, CheckSquare, Send, MessageCircle } from 'lucide-react-native';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import axiosInstance from "./api/axiosInstance"; // path adjust kar le
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const SignUpScreen: React.FC = () => {
   const router = useRouter();
@@ -63,72 +65,138 @@ const SignUpScreen: React.FC = () => {
     return true;
   };
 
-  const handleSubmit = async (): Promise<void> => {
-    if (!validateForm()) return;
+  // const handleSubmit = async (): Promise<void> => {
+  //   if (!validateForm()) return;
 
-    setLoading(true);
-    setError('');
+  //   setLoading(true);
+  //   setError('');
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, phone: contact, password }),
-      });
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/auth/register`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ fullName, email, phone: contact, password }),
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || 'Registration failed');
-        return;
-      }
+  //     if (!response.ok) {
+  //       setError(data.message || 'Registration failed');
+  //       return;
+  //     }
 
-      // Assume success, OTP sent
-      setStep('otp');
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('Send OTP error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     // Assume success, OTP sent
+  //     setStep('otp');
+  //   } catch (err) {
+  //     setError('Network error. Please try again.');
+  //     console.error('Send OTP error:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const handleVerify = async (): Promise<void> => {
-    if (otp.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
+const handleSubmit = async (): Promise<void> => {
+  if (!validateForm()) return;
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const response = await axiosInstance.post('/auth/register', {
+      fullName,
+      email,
+      phone: contact,
+      password,
+    });
+
+   if (response.status === 200 || response.status === 201) {
+  console.log('✅ OTP sent successfully');
+  setStep('otp');
+} else {
+  setError(response.data.message || 'Registration failed');
+}
+
+  } catch (err: any) {
+    console.error('Send OTP error:', err.response?.data || err.message);
+    setError(err.response?.data?.message || 'Network error. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  // const handleVerify = async (): Promise<void> => {
+  //   if (otp.length !== 6) {
+  //     setError('Please enter a valid 6-digit OTP');
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   setError('');
+
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/auth/verify-email-otp`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ email, otp }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (!response.ok) {
+  //       setError(data.message || 'Verification failed');
+  //       return;
+  //     }
+
+  //     // On success, store user data
+  //     const userData = { fullName, email, contact, password };
+  //     await AsyncStorage.setItem('registeredUser', JSON.stringify(userData));
+
+  //     // Redirect to login page
+  //     router.push('/login');
+  //   } catch (err) {
+  //     setError('Network error. Please try again.');
+  //     console.error('Verify OTP error:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+const handleVerify = async (): Promise<void> => {
+  if (otp.length !== 6) {
+    setError('Please enter a valid 6-digit OTP');
+    return;
+  }
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const response = await axiosInstance.post('/auth/verify-email-otp', {
+      email,
+      otp,
+    });
+
+    if (!response.data.success) {
+      setError(response.data.message || 'Verification failed');
       return;
     }
 
-    setLoading(true);
-    setError('');
+    const userData = { fullName, email, contact, password };
+    await AsyncStorage.setItem('registeredUser', JSON.stringify(userData));
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-email-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      });
+    router.push('/login');
+  } catch (err: any) {
+    console.error('Verify OTP error:', err.response?.data || err.message);
+    setError(err.response?.data?.message || 'Network error. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-      const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || 'Verification failed');
-        return;
-      }
 
-      // On success, store user data
-      const userData = { fullName, email, contact, password };
-      await AsyncStorage.setItem('registeredUser', JSON.stringify(userData));
-
-      // Redirect to login page
-      router.push('/login');
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('Verify OTP error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleResend = (): void => {
     setStep('form');

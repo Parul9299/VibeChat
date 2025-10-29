@@ -1,4 +1,10 @@
+// tabs/contact.ytxs
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_API_URL,
+});
 import {
   View,
   Text,
@@ -26,6 +32,7 @@ import {
   X
 } from 'lucide-react-native';
 import { useChat } from '../context/ChatContext';
+import { getOrCreateConversation } from "../api/conversatoinApi";
 
 interface Contact {
   id: string;
@@ -69,59 +76,112 @@ export default function ContactsScreen() {
     fetchContacts();
   }, []);
 
-  const fetchContacts = async () => {
-    try {
-      // Request contact access permission
-      const { status } = await Contacts.requestPermissionsAsync();
+  // const fetchContacts = async () => {
+  //   try {
+  //     // Request contact access permission
+  //     const { status } = await Contacts.requestPermissionsAsync();
 
-      if (status === 'granted') {
-        // Fetch contacts with name, phone numbers, and image
-        const { data } = await Contacts.getContactsAsync({
-          fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Image],
+  //     if (status === 'granted') {
+  //       // Fetch contacts with name, phone numbers, and image
+  //       const { data } = await Contacts.getContactsAsync({
+  //         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Image],
+  //       });
+
+  //       if (data.length > 0) {
+  //         const processedContacts: Contact[] = data
+  //           .filter(contact => contact.name && contact.phoneNumbers && contact.phoneNumbers.length > 0)
+  //           .map(contact => {
+  //             const fullName = contact.name || 'Unknown';
+  //             const phone = contact.phoneNumbers?.[0]?.number || '';
+  //             const photo = contact.image?.uri
+  //               ? contact.image.uri
+  //               : 'https://img.myloview.com/stickers/default-avatar-profile-icon-vector-social-media-user-photo-700-205577532.jpg';
+
+  //             return {
+  //               id: contact.id || Date.now().toString(),
+  //               name: fullName,
+  //               avatar: photo,
+  //               about: phone ? `Phone: ${phone}` : 'No number available',
+  //               time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  //               unread: 0,
+  //               online: false,
+  //             };
+  //           })
+  //           .sort((a, b) => a.name.localeCompare(b.name));
+
+  //         setContacts(processedContacts);
+
+  //         // Optional: Send contacts to backend for matching with registered users
+  //         // await fetch("https://your-server.com/api/syncContacts", {
+  //         //   method: "POST",
+  //         //   headers: { "Content-Type": "application/json" },
+  //         //   body: JSON.stringify({ contacts: processedContacts }),
+  //         // });
+  //       } else {
+  //         Alert.alert('No Contacts', 'No contacts found on this device.');
+  //       }
+  //     } else {
+  //       Alert.alert('Permission Denied', 'You must allow contacts access to sync them.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching contacts:', error);
+  //     Alert.alert('Error', 'Failed to load contacts. Please try again later.');
+  //   }
+  // };
+
+
+  const fetchContacts = async () => {
+  try {
+    const { status } = await Contacts.requestPermissionsAsync();
+
+    if (status === 'granted') {
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers, Contacts.Fields.Image],
+      });
+
+      if (data.length > 0) {
+        const processedContacts = data
+          .filter(c => c.name && c.phoneNumbers && c.phoneNumbers.length > 0)
+          .map(c => {
+            const fullName = c.name;
+            const phone = c.phoneNumbers?.[0]?.number?.replace(/\s+/g, "") || ""; // remove spaces
+            const photo = c.image?.uri
+              ? c.image.uri
+              : "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60";
+
+            return { id: c.id, name: fullName, phone, avatar: photo, about: `Phone: ${phone}`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), unread: 0, online: false };
+          });
+
+        setContacts(processedContacts);
+
+        // ✅ Sync contacts with backend
+        const syncResponse = await api.post("/contacts/sync", {
+          contacts: processedContacts,
         });
 
-        if (data.length > 0) {
-          const processedContacts: Contact[] = data
-            .filter(contact => contact.name && contact.phoneNumbers && contact.phoneNumbers.length > 0)
-            .map(contact => {
-              const fullName = contact.name || 'Unknown';
-              const phone = contact.phoneNumbers?.[0]?.number || '';
-              const photo = contact.image?.uri
-                ? contact.image.uri
-                : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60';
+        const matchedUsers = syncResponse.data.matchedUsers;
+        console.log("📱 Matched registered users:", matchedUsers);
 
-              return {
-                id: contact.id || Date.now().toString(),
-                name: fullName,
-                avatar: photo,
-                about: phone ? `Phone: ${phone}` : 'No number available',
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                unread: 0,
-                online: false,
-              };
-            })
-            .sort((a, b) => a.name.localeCompare(b.name));
+        // ✅ Create conversation for each matched user
+        const senderId = "671c2c6df3a3b64f6c8b1234"; // current logged-in user ID
 
-          setContacts(processedContacts);
-
-          // Optional: Send contacts to backend for matching with registered users
-          // await fetch("https://your-server.com/api/syncContacts", {
-          //   method: "POST",
-          //   headers: { "Content-Type": "application/json" },
-          //   body: JSON.stringify({ contacts: processedContacts }),
-          // });
-        } else {
-          Alert.alert('No Contacts', 'No contacts found on this device.');
+        for (const user of matchedUsers) {
+          try {
+            const receiverId = user._id;
+            const conversation = await getOrCreateConversation(senderId, receiverId);
+            console.log(`✅ Conversation with ${user.name}: ${conversation._id}`);
+          } catch (err: Error | any) {
+            console.log("❌ Conversation Error:", err.message);
+          }
         }
       } else {
-        Alert.alert('Permission Denied', 'You must allow contacts access to sync them.');
+        Alert.alert("No Contacts Found");
       }
-    } catch (error) {
-      console.error('Error fetching contacts:', error);
-      Alert.alert('Error', 'Failed to load contacts. Please try again later.');
     }
-  };
-
+  } catch (error) {
+    console.error("Contact Fetch Error:", error);
+  }
+};
   const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
